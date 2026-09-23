@@ -1,8 +1,12 @@
-import StyleGuide from "./StyleGuide";
+import { BrowserRouter } from "react-router-dom";
+import { AnimatedRoutes } from "./AnimatedRoutes";
 
-// Platzhalter-Einstieg, bis das Routing mit #5 (Onboarding-Screen) kommt.
 function App() {
-  return <StyleGuide />;
+  return (
+    <BrowserRouter>
+      <AnimatedRoutes />
+    </BrowserRouter>
+  );
 }
 
 export default App;
