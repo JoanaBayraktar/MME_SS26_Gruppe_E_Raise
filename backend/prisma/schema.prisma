@@ -1,0 +1,160 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dozent {
+  id              Int             @id @default(autoincrement()) @map("dozent_id")
+  vorname         String
+  nachname        String
+  email           String          @unique
+  passwortHash    String          @map("passwort_hash")
+  erstelltAm      DateTime        @default(now()) @map("erstellt_am")
+  veranstaltungen Veranstaltung[]
+
+  @@map("dozent")
+}
+
+model Veranstaltung {
+  id              Int             @id @default(autoincrement()) @map("veranstaltung_id")
+  dozentId        Int             @map("dozent_id")
+  dozent          Dozent          @relation(fields: [dozentId], references: [id], onDelete: Cascade)
+  name            String
+  kuerzel         String
+  erstelltAm      DateTime        @default(now()) @map("erstellt_am")
+  sessions        Session[]
+  archivEintraege ArchivEintrag[]
+
+  @@map("veranstaltung")
+}
+
+model Session {
+  id              Int           @id @default(autoincrement()) @map("session_id")
+  veranstaltungId Int           @map("veranstaltung_id")
+  veranstaltung   Veranstaltung @relation(fields: [veranstaltungId], references: [id], onDelete: Cascade)
+  name            String
+  datum           DateTime      @db.Date
+  startZeit       DateTime      @map("start_zeit")
+  endZeit         DateTime?     @map("end_zeit")
+  status          SessionStatus @default(GEPLANT)
+  qrCode          String        @unique @map("qr_code")
+  code            String        @unique
+  wiederholend    Boolean       @default(false)
+  fragen          Frage[]
+  umfragen        Umfrage[]
+
+  @@map("session")
+}
+
+enum SessionStatus {
+  GEPLANT
+  LAUFEND
+  BEENDET
+}
+
+// Umfragen laufen pro Session (Live-Umfrage während einer Vorlesung), nicht pro Veranstaltung
+model Umfrage {
+  id              Int             @id @default(autoincrement()) @map("umfrage_id")
+  sessionId       Int             @map("session_id")
+  session         Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  frageText       String          @map("frage_text")
+  status          UmfrageStatus   @default(AKTIV)
+  erstelltAm      DateTime        @default(now()) @map("erstellt_am")
+  antwortoptionen Antwortoption[]
+
+  @@map("umfrage")
+}
+
+enum UmfrageStatus {
+  AKTIV
+  BEENDET
+}
+
+model Antwortoption {
+  id           Int          @id @default(autoincrement()) @map("option_id")
+  umfrageId    Int          @map("umfrage_id")
+  umfrage      Umfrage      @relation(fields: [umfrageId], references: [id], onDelete: Cascade)
+  text         String
+  abstimmungen Abstimmung[]
+
+  @@map("antwortoption")
+}
+
+model Abstimmung {
+  id           Int           @id @default(autoincrement()) @map("abstimmung_id")
+  optionId     Int           @map("option_id")
+  option       Antwortoption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  studentToken String        @map("student_token")
+  erstelltAm   DateTime      @default(now()) @map("erstellt_am")
+
+  @@unique([optionId, studentToken])
+  @@map("abstimmung")
+}
+
+model Frage {
+  id              Int            @id @default(autoincrement()) @map("frage_id")
+  sessionId       Int            @map("session_id")
+  session         Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  text            String
+  kapitel         String?
+  folienNr        Int?           @map("folien_nr")
+  status          FrageStatus    @default(NEU)
+  studentToken    String         @map("student_token")
+  dozentKommentar String?        @map("dozent_kommentar")
+  erstelltAm      DateTime       @default(now()) @map("erstellt_am")
+  kommentare      Kommentar[]
+  upvotes         Upvote[]
+  archivEintrag   ArchivEintrag?
+
+  @@map("frage")
+}
+
+enum FrageStatus {
+  NEU
+  GEFRAGT
+  BEANTWORTET
+  IRRELEVANT
+}
+
+model Kommentar {
+  id           Int      @id @default(autoincrement()) @map("kommentar_id")
+  frageId      Int      @map("frage_id")
+  frage        Frage    @relation(fields: [frageId], references: [id], onDelete: Cascade)
+  text         String
+  isDozent     Boolean  @default(false) @map("is_dozent")
+  studentToken String?  @map("student_token")
+  erstelltAm   DateTime @default(now()) @map("erstellt_am")
+
+  @@map("kommentar")
+}
+
+model Upvote {
+  id           Int      @id @default(autoincrement()) @map("upvote_id")
+  frageId      Int      @map("frage_id")
+  frage        Frage    @relation(fields: [frageId], references: [id], onDelete: Cascade)
+  studentToken String   @map("student_token")
+  erstelltAm   DateTime @default(now()) @map("erstellt_am")
+
+  @@unique([frageId, studentToken])
+  @@map("upvote")
+}
+
+model ArchivEintrag {
+  id              Int           @id @default(autoincrement()) @map("archiv_id")
+  veranstaltungId Int           @map("veranstaltung_id")
+  veranstaltung   Veranstaltung @relation(fields: [veranstaltungId], references: [id], onDelete: Cascade)
+  frageId         Int           @unique @map("frage_id")
+  frage           Frage         @relation(fields: [frageId], references: [id], onDelete: Cascade)
+  kapitel         String?
+  folienNr        Int?          @map("folien_nr")
+  frageText       String        @map("frage_text")
+  antwortText     String?       @map("antwort_text")
+  erstelltAm      DateTime      @default(now()) @map("erstellt_am")
+
+  @@map("archiv_eintrag")
+}
