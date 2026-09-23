@@ -11,3 +11,34 @@ Ein Tool zur Organisation von Fragen vor und während einer Vorlesung.
 - Wissens-Archiv mit Suchfunktion: Automatische Übernahme gelöster Fragen in eine nach Kapiteln sortierte FAQ.
 - Session-Planning: Dozenten können Fragen zu "Themenblöcken" für die nächste Sitzung gruppieren.
 - Mögliche Erweiterungen: Integration von Tutoren.
+
+## Tech-Stack
+**Frontend:** React + TypeScript, Tailwind CSS, react-router-dom, react-hook-form + zod, @dnd-kit/core, recharts, socket.io-client, lucide-react
+**Backend:** Node.js + Express, TypeScript, Prisma ORM, PostgreSQL, socket.io, bcrypt + express-session, zod, qrcode
+
+## Projektstruktur
+```
+/frontend   React-App (Vite)
+/backend    Express-API + Prisma-Schema
+docker-compose.yml
+```
+
+## Installation
+Voraussetzung: Docker & Docker Compose.
+
+```bash
+docker-compose up
+```
+
+Das startet Frontend (http://localhost:5173), Backend (http://localhost:4000) und eine PostgreSQL-Datenbank. Das Datenbankschema wird beim ersten Start automatisch angelegt, es sind keine weiteren Kommandos nötig.
+
+## Features
+Aktueller Stand: Projekt-Grundgerüst (Repo-Struktur, Docker-Setup, Datenbankschema). Die einzelnen Features werden über die verlinkten GitHub Issues umgesetzt und hier ergänzt, sobald sie fertig sind.
+
+## Testen
+Wird ergänzt, sobald die ersten Features umgesetzt sind.
+
+## Zuständigkeiten
+- **Joana Bayraktar:** Onboarding & Authentifizierung, Session-Management & Navigation
+- **Philomena:** Veranstaltungsverwaltung, Umfragen & Abstimmungen
+- **Johannes Gaul:** Live Q&A / Fragen-Modul, Archiv & Recherche

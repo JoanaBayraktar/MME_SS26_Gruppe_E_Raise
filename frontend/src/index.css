@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Seitenübergänge über die native View Transitions API: alte Seite fliegt
+   leicht nach links raus während die neue von rechts reinkommt, beides
+   gleichzeitig statt hartem Cut. Siehe useViewTransitionLocation.ts */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root) {
+  animation-name: raise-screen-exit;
+}
+
+::view-transition-new(root) {
+  animation-name: raise-screen-enter;
+}
+
+/* Zurück-Navigation (siehe useViewTransitionLocation.ts): gespiegelte Richtung */
+html[data-transition-direction="back"]::view-transition-old(root) {
+  animation-name: raise-screen-exit-reverse;
+}
+
+html[data-transition-direction="back"]::view-transition-new(root) {
+  animation-name: raise-screen-enter-reverse;
+}
+
+@keyframes raise-screen-exit {
+  to {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+}
+
+@keyframes raise-screen-enter {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+@keyframes raise-screen-exit-reverse {
+  to {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+@keyframes raise-screen-enter-reverse {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
