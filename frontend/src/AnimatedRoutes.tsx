@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import StyleGuide from "./StyleGuide";
 import OnboardingPage from "./pages/OnboardingPage";
 import JoinPage from "./pages/JoinPage";
+import QrScannerPage from "./pages/QrScannerPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -17,6 +18,7 @@ export function AnimatedRoutes() {
     <Routes location={location}>
       <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
       <Route path={ROUTES.JOIN} element={<JoinPage />} />
+      <Route path={ROUTES.JOIN_QR} element={<QrScannerPage />} />
       <Route path={ROUTES.SESSION} element={<SessionPlaceholderPage />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />

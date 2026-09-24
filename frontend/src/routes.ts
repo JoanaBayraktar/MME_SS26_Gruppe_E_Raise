@@ -1,6 +1,7 @@
 export const ROUTES = {
   ONBOARDING: "/",
   JOIN: "/join",
+  JOIN_QR: "/join/scan",
   SESSION: "/session",
   LOGIN: "/login",
   REGISTER: "/register",
@@ -21,4 +22,5 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.DOZENT_DASHBOARD]: 2,
   [ROUTES.REGISTER]: 2,
   [ROUTES.FORGOT_PASSWORD]: 2,
+  [ROUTES.JOIN_QR]: 2,
 };

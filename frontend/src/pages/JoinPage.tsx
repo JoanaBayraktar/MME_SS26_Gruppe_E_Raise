@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { QrCode } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { BackButton, Button, Card, Checkbox, Field, Input } from "../components/ui";
 import { getJson } from "../lib/api";
@@ -25,6 +26,8 @@ type JoinFormValues = z.infer<typeof joinSchema>;
 
 export default function JoinPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const scannedCode = (location.state as { scannedCode?: string } | null)?.scannedCode ?? "";
   const {
     register,
     handleSubmit,
@@ -32,7 +35,7 @@ export default function JoinPage() {
     formState: { errors, isSubmitting },
   } = useForm<JoinFormValues>({
     resolver: zodResolver(joinSchema),
-    defaultValues: { name: "", code: "", anonymous: true },
+    defaultValues: { name: "", code: scannedCode, anonymous: true },
   });
 
   const onSubmit = async (values: JoinFormValues) => {
@@ -81,6 +84,15 @@ export default function JoinPage() {
             </Button>
           </form>
         </Card>
+
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.JOIN_QR)}
+          className="mt-4 flex w-full items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-brand"
+        >
+          <QrCode className="h-4 w-4" />
+          QR-Code scannen
+        </button>
       </div>
     </div>
   );
