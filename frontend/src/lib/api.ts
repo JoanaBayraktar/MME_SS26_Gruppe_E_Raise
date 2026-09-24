@@ -5,6 +5,12 @@ export interface DozentDto {
   email: string;
 }
 
+export interface VeranstaltungDto {
+  id: number;
+  name: string;
+  kuerzel: string;
+}
+
 export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path, { credentials: "include" });
   const data = await res.json().catch(() => null);

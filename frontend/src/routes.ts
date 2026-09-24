@@ -8,6 +8,7 @@ export const ROUTES = {
   FORGOT_PASSWORD: "/passwort-vergessen",
   DOZENT_DASHBOARD: "/dozent",
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
+  DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
   DESIGN_SYSTEM: "/design-system",
 } as const;
 
@@ -25,4 +26,5 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.FORGOT_PASSWORD]: 2,
   [ROUTES.JOIN_QR]: 2,
   [ROUTES.DOZENT_SESSION_NEW]: 3,
+  [ROUTES.DOZENT_VERANSTALTUNG_NEW]: 3,
 };
