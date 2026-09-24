@@ -38,3 +38,18 @@ export const ROUTE_DEPTH: Record<string, number> = {
 export function getRouteDepth(pathname: string): number | undefined {
   return ROUTE_DEPTH[pathname];
 }
+
+// Routen innerhalb des Dozenten-Dashboards teilen sich Sidebar und Header
+// (DashboardLayout) – beim Wechsel zwischen ihnen ändert sich nur der Inhalt,
+// nicht der ganze Screen. Eine volle Seitenübergangs-Animation würde dort
+// fälschlich auch Sidebar/Header mit animieren.
+const DASHBOARD_SHELL_ROUTES: Set<string> = new Set([
+  ROUTES.DOZENT_DASHBOARD,
+  ROUTES.DOZENT_SESSIONS,
+  ROUTES.DOZENT_ARCHIV,
+  ROUTES.DOZENT_ACCOUNT,
+]);
+
+export function sharesLayoutShell(pathnameA: string, pathnameB: string): boolean {
+  return DASHBOARD_SHELL_ROUTES.has(pathnameA) && DASHBOARD_SHELL_ROUTES.has(pathnameB);
+}

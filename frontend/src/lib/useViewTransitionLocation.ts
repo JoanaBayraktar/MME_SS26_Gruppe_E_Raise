@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Location, useLocation } from "react-router-dom";
-import { getRouteDepth as lookupRouteDepth } from "../routes";
+import { getRouteDepth as lookupRouteDepth, sharesLayoutShell } from "../routes";
 
 export const TRANSITION_DIRECTION = {
   FORWARD: "forward",
@@ -36,6 +36,12 @@ export function useViewTransitionLocation(): Location {
 
   useLayoutEffect(() => {
     if (location.pathname === previousPathname.current) return;
+
+    if (sharesLayoutShell(location.pathname, previousPathname.current)) {
+      previousPathname.current = location.pathname;
+      setDisplayedLocation(location);
+      return;
+    }
 
     const direction =
       getRouteDepth(location.pathname) < getRouteDepth(previousPathname.current)
