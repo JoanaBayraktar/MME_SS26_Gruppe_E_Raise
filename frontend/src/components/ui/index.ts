@@ -5,6 +5,7 @@ export type { BadgeTone } from "./Badge";
 export { Card } from "./Card";
 export { Field } from "./Field";
 export { Input, Textarea } from "./Input";
+export { Select } from "./Select";
 export { SegmentedControl } from "./SegmentedControl";
 export { Checkbox } from "./Checkbox";
 export { Avatar } from "./Avatar";

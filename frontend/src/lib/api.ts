@@ -24,6 +24,14 @@ export interface ActiveSessionDto {
   veranstaltungName: string;
 }
 
+export interface SessionSummaryDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  veranstaltungName: string;
+}
+
 export class ApiError extends Error {
   status: number;
 

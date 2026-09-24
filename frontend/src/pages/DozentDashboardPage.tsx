@@ -1,25 +1,11 @@
-import { Archive, Calendar, Folder, Plus, User } from "lucide-react";
+import { Folder, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  DashboardLayout,
-  EmptyState,
-  SidebarNavItem,
-} from "../components/ui";
+import { Alert, Badge, Button, Card, DashboardLayout, EmptyState } from "../components/ui";
 import { ActiveSessionDto, DozentDto, getJson, isUnauthorized, VeranstaltungSummaryDto } from "../lib/api";
+import { DOZENT_NAV_ITEMS } from "../lib/dozentNav";
 import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../lib/sessionStatus";
-import { buildVeranstaltungDetailPath, ROUTES } from "../routes";
-
-const NAV_ITEMS: SidebarNavItem[] = [
-  { key: "veranstaltungen", label: "Veranstaltungen", icon: Folder, href: ROUTES.DOZENT_DASHBOARD },
-  { key: "sessions", label: "Sessions", icon: Calendar, href: ROUTES.DOZENT_SESSIONS },
-  { key: "archiv", label: "Archiv", icon: Archive, href: ROUTES.DOZENT_ARCHIV },
-  { key: "account", label: "Account", icon: User, href: ROUTES.DOZENT_ACCOUNT },
-];
+import { ROUTES } from "../routes";
 
 type LoadState = "loading" | "loaded" | "error";
 
@@ -53,7 +39,7 @@ export default function DozentDashboardPage() {
 
   return (
     <DashboardLayout
-      navItems={NAV_ITEMS}
+      navItems={DOZENT_NAV_ITEMS}
       activeNavKey="veranstaltungen"
       title="Veranstaltungen"
       userName={dozent ? `${dozent.vorname} ${dozent.nachname}` : ""}
@@ -93,11 +79,7 @@ export default function DozentDashboardPage() {
             </thead>
             <tbody>
               {veranstaltungen.map((veranstaltung) => (
-                <tr
-                  key={veranstaltung.id}
-                  onClick={() => navigate(buildVeranstaltungDetailPath(veranstaltung.id))}
-                  className="cursor-pointer border-t border-gray-100 transition hover:bg-gray-50"
-                >
+                <tr key={veranstaltung.id} className="border-t border-gray-100">
                   <td className="px-4 py-3 font-semibold text-gray-900">{veranstaltung.name}</td>
                   <td className="px-4 py-3 text-gray-500">{veranstaltung.kuerzel}</td>
                   <td className="px-4 py-3 text-gray-500">{veranstaltung.sessionCount} Sessions</td>
