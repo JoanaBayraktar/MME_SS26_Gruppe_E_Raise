@@ -8,6 +8,7 @@ export { Input, Textarea } from "./Input";
 export { Select } from "./Select";
 export { SegmentedControl } from "./SegmentedControl";
 export { Checkbox } from "./Checkbox";
+export { Switch } from "./Switch";
 export { Avatar } from "./Avatar";
 export { EmptyState } from "./EmptyState";
 export { ProgressBar } from "./ProgressBar";
