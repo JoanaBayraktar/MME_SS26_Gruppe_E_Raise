@@ -11,6 +11,19 @@ export interface VeranstaltungDto {
   kuerzel: string;
 }
 
+export interface VeranstaltungSummaryDto extends VeranstaltungDto {
+  sessionCount: number;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+}
+
+export interface ActiveSessionDto {
+  id: number;
+  name: string;
+  code: string;
+  startZeit: string;
+  veranstaltungName: string;
+}
+
 export class ApiError extends Error {
   status: number;
 

@@ -1,15 +1,16 @@
 import { Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, BackButton, Badge, BadgeTone, Button, Card, EmptyState } from "../components/ui";
+import { Alert, BackButton, Badge, Button, Card, EmptyState } from "../components/ui";
 import { ApiError, getJson, isUnauthorized } from "../lib/api";
+import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE, SessionStatus } from "../lib/sessionStatus";
 import { ROUTES } from "../routes";
 
 interface VeranstaltungSessionDto {
   id: number;
   name: string;
   code: string;
-  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  status: SessionStatus;
 }
 
 interface VeranstaltungDetailDto {
@@ -20,18 +21,6 @@ interface VeranstaltungDetailDto {
 }
 
 type LoadState = "loading" | "loaded" | "not-found" | "error";
-
-const SESSION_STATUS_LABEL: Record<VeranstaltungSessionDto["status"], string> = {
-  GEPLANT: "geplant",
-  LAUFEND: "läuft",
-  BEENDET: "beendet",
-};
-
-const SESSION_STATUS_TONE: Record<VeranstaltungSessionDto["status"], BadgeTone> = {
-  GEPLANT: "neutral",
-  LAUFEND: "brand",
-  BEENDET: "muted",
-};
 
 // Vorläufiger Ersatz für die Veranstaltungsansicht aus #11 (Status-
 // Übersicht etc. kommt dort). Zeigt schon die Sessions dieser konkreten

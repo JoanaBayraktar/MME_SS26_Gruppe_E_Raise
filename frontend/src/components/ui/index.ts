@@ -12,3 +12,7 @@ export { EmptyState } from "./EmptyState";
 export { ProgressBar } from "./ProgressBar";
 export { Alert } from "./Alert";
 export type { AlertTone } from "./Alert";
+export { Sidebar } from "./Sidebar";
+export type { SidebarNavItem } from "./Sidebar";
+export { AppHeader } from "./AppHeader";
+export { DashboardLayout } from "./DashboardLayout";

@@ -42,6 +42,29 @@ sessionsRouter.get("/by-code/:code", async (req, res) => {
   res.json({ id: session.id, name: session.name, status: session.status });
 });
 
+sessionsRouter.get("/active", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const session = await prisma.session.findFirst({
+    where: { status: "LAUFEND", veranstaltung: { dozentId: req.session.dozentId } },
+    include: { veranstaltung: true },
+  });
+
+  if (!session) {
+    return res.json(null);
+  }
+
+  res.json({
+    id: session.id,
+    name: session.name,
+    code: session.code,
+    startZeit: session.startZeit,
+    veranstaltungName: session.veranstaltung.name,
+  });
+});
+
 sessionsRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
     return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
