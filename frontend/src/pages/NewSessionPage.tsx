@@ -3,14 +3,10 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { z } from "zod";
-import { Alert, Button, Card, Field, Input, Switch } from "../components/ui";
+import { Alert, Button, Field, Input, Modal, Switch } from "../components/ui";
 import { CreatedSessionDto, getJson, postJson, SessionCodeDto, VeranstaltungDto } from "../lib/api";
 import { SessionsPageContext } from "./SessionsPage";
 import { ROUTES } from "../routes";
-
-// Dauer der Ein-/Ausblend-Animation des Overlays – muss zur CSS-Transition
-// unten (duration-200) passen, damit close() erst nach dem Ausblenden navigiert.
-const OVERLAY_TRANSITION_MS = 200;
 
 const newSessionSchema = z
   .object({
@@ -39,9 +35,6 @@ export default function NewSessionPage() {
   const [code, setCode] = useState<string | null>(null);
   const [codeState, setCodeState] = useState<CodeLoadState>("loading");
   const [serverError, setServerError] = useState<string | null>(null);
-  // Overlay blendet erst nach dem Mount ein (statt sofort sichtbar zu sein),
-  // damit die CSS-Transition greift; beim Schließen erst ausblenden, dann navigieren.
-  const [visible, setVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -75,17 +68,7 @@ export default function NewSessionPage() {
 
   useEffect(loadCode, []);
 
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  const close = () => {
-    setVisible(false);
-    window.setTimeout(() => navigate(ROUTES.DOZENT_SESSIONS), OVERLAY_TRANSITION_MS);
-  };
-
-  const onSubmit = async (values: NewSessionFormValues) => {
+  const submit = (close: () => void) => async (values: NewSessionFormValues) => {
     setServerError(null);
     try {
       await postJson<CreatedSessionDto>("/api/sessions", {
@@ -104,125 +87,119 @@ export default function NewSessionPage() {
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-6 transition-opacity duration-200 ${
-        visible ? "opacity-100" : "opacity-0"
-      }`}
-      onClick={close}
-    >
-      <Card
-        className={`w-full max-w-lg p-8 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h1 className="text-xl font-bold text-gray-900">Neue Session</h1>
-        <p className="mt-1 text-sm text-gray-500">Bereite eine neue Vorlesungsstunde vor.</p>
+    <Modal className="max-w-lg p-8" onClose={() => navigate(ROUTES.DOZENT_SESSIONS)}>
+      {(close) => (
+        <>
+          <h1 className="text-xl font-bold text-gray-900">Neue Session</h1>
+          <p className="mt-1 text-sm text-gray-500">Bereite eine neue Vorlesungsstunde vor.</p>
 
-        {veranstaltungenState === "empty" && (
-          <Alert tone="error" className="mt-6">
-            Du hast noch keine Veranstaltung angelegt. Lege zuerst eine Veranstaltung an.
-          </Alert>
-        )}
+          {veranstaltungenState === "empty" && (
+            <Alert tone="error" className="mt-6">
+              Du hast noch keine Veranstaltung angelegt. Lege zuerst eine Veranstaltung an.
+            </Alert>
+          )}
 
-        {veranstaltungenState === "error" && (
-          <Alert tone="error" className="mt-6">
-            Konnte Veranstaltungen nicht laden.
-          </Alert>
-        )}
+          {veranstaltungenState === "error" && (
+            <Alert tone="error" className="mt-6">
+              Konnte Veranstaltungen nicht laden.
+            </Alert>
+          )}
 
-        {veranstaltungenState === "loaded" && (
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-5">
-            {serverError && <Alert tone="error">{serverError}</Alert>}
+          {veranstaltungenState === "loaded" && (
+            <form onSubmit={handleSubmit(submit(close))} className="mt-6 flex flex-col gap-5">
+              {serverError && <Alert tone="error">{serverError}</Alert>}
 
-            <Field label="Name der Session" htmlFor="name" error={errors.name?.message}>
-              <Input id="name" placeholder="z. B. Session 3 · Prototyping" {...register("name")} />
-            </Field>
+              <Field label="Name der Session" htmlFor="name" error={errors.name?.message}>
+                <Input id="name" placeholder="z. B. Session 3 · Prototyping" {...register("name")} />
+              </Field>
 
-            <div>
-              <p className="mb-1 block text-sm font-medium text-gray-700">Veranstaltung auswählen</p>
-              <div className="flex flex-wrap gap-2">
-                {veranstaltungen.map((veranstaltung) => (
-                  <button
-                    key={veranstaltung.id}
-                    type="button"
-                    onClick={() =>
-                      setValue("veranstaltungId", String(veranstaltung.id), { shouldValidate: true })
-                    }
-                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                      selectedVeranstaltungId === String(veranstaltung.id)
-                        ? "border-brand bg-brand-light text-brand"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    {veranstaltung.name}
-                  </button>
-                ))}
+              <div>
+                <p className="mb-1 block text-sm font-medium text-gray-700">Veranstaltung auswählen</p>
+                <div className="flex flex-wrap gap-2">
+                  {veranstaltungen.map((veranstaltung) => (
+                    <button
+                      key={veranstaltung.id}
+                      type="button"
+                      onClick={() =>
+                        setValue("veranstaltungId", String(veranstaltung.id), { shouldValidate: true })
+                      }
+                      className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                        selectedVeranstaltungId === String(veranstaltung.id)
+                          ? "border-brand bg-brand-light text-brand"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {veranstaltung.name}
+                    </button>
+                  ))}
+                </div>
+                {errors.veranstaltungId && (
+                  <p className="mt-1 text-xs text-red-600">{errors.veranstaltungId.message}</p>
+                )}
               </div>
-              {errors.veranstaltungId && (
-                <p className="mt-1 text-xs text-red-600">{errors.veranstaltungId.message}</p>
-              )}
-            </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Tag" htmlFor="tag" error={errors.tag?.message}>
-                <Input id="tag" type="date" {...register("tag")} />
-              </Field>
-              <Field label="Von" htmlFor="von" error={errors.von?.message}>
-                <Input id="von" type="time" {...register("von")} />
-              </Field>
-              <Field label="Bis" htmlFor="bis" error={errors.bis?.message}>
-                <Input id="bis" type="time" {...register("bis")} />
-              </Field>
-            </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Tag" htmlFor="tag" error={errors.tag?.message}>
+                  <Input id="tag" type="date" {...register("tag")} />
+                </Field>
+                <Field label="Von" htmlFor="von" error={errors.von?.message}>
+                  <Input id="von" type="time" {...register("von")} />
+                </Field>
+                <Field label="Bis" htmlFor="bis" error={errors.bis?.message}>
+                  <Input id="bis" type="time" {...register("bis")} />
+                </Field>
+              </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 px-4 py-3">
-                <span>
-                  <span className="block text-sm font-semibold text-gray-900">
-                    Automatisch starten &amp; beenden
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 px-4 py-3">
+                  <span>
+                    <span className="block text-sm font-semibold text-gray-900">
+                      Automatisch starten &amp; beenden
+                    </span>
+                    <span className="text-xs text-gray-500">Session läuft im angegebenen Zeitraum von selbst</span>
                   </span>
-                  <span className="text-xs text-gray-500">Session läuft im angegebenen Zeitraum von selbst</span>
-                </span>
-                <Switch checked={autoStart} onChange={() => setAutoStart(true)} />
-              </label>
-              <label className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 px-4 py-3">
+                  <Switch checked={autoStart} onChange={() => setAutoStart(true)} />
+                </label>
+                <label className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 px-4 py-3">
+                  <span>
+                    <span className="block text-sm font-semibold text-gray-900">Manueller Start</span>
+                    <span className="text-xs text-gray-500">Du startest die Session selbst</span>
+                  </span>
+                  <Switch checked={!autoStart} onChange={() => setAutoStart(false)} />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
                 <span>
-                  <span className="block text-sm font-semibold text-gray-900">Manueller Start</span>
-                  <span className="text-xs text-gray-500">Du startest die Session selbst</span>
+                  <span className="block text-xs font-medium uppercase tracking-wide text-gray-400">
+                    Session-Code
+                  </span>
+                  <span className="text-2xl font-bold tracking-widest text-brand">
+                    {codeState === "loaded" ? code : "..."}
+                  </span>
                 </span>
-                <Switch checked={!autoStart} onChange={() => setAutoStart(false)} />
-              </label>
-            </div>
+                <button
+                  type="button"
+                  onClick={loadCode}
+                  disabled={codeState === "loading"}
+                  className="text-sm font-semibold text-brand hover:underline disabled:opacity-50"
+                >
+                  Neu generieren
+                </button>
+              </div>
 
-            <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
-              <span>
-                <span className="block text-xs font-medium uppercase tracking-wide text-gray-400">
-                  Session-Code
-                </span>
-                <span className="text-2xl font-bold tracking-widest text-brand">
-                  {codeState === "loaded" ? code : "..."}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={loadCode}
-                disabled={codeState === "loading"}
-                className="text-sm font-semibold text-brand hover:underline disabled:opacity-50"
-              >
-                Neu generieren
-              </button>
-            </div>
-
-            <div className="flex gap-3">
-              <Button type="submit" disabled={isSubmitting || codeState !== "loaded"}>
-                {isSubmitting ? "Wird angelegt..." : "Speichern"}
-              </Button>
-              <Button type="button" variant="outline" onClick={close}>
-                Abbrechen
-              </Button>
-            </div>
-          </form>
-        )}
-      </Card>
-    </div>
+              <div className="flex gap-3">
+                <Button type="submit" disabled={isSubmitting || codeState !== "loaded"}>
+                  {isSubmitting ? "Wird angelegt..." : "Speichern"}
+                </Button>
+                <Button type="button" variant="outline" onClick={close}>
+                  Abbrechen
+                </Button>
+              </div>
+            </form>
+          )}
+        </>
+      )}
+    </Modal>
   );
 }
