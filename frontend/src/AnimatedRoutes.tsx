@@ -9,6 +9,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import SessionPlaceholderPage from "./pages/SessionPlaceholderPage";
 import DozentDashboardPage from "./pages/DozentDashboardPage";
 import SessionsPage from "./pages/SessionsPage";
+import SessionDetailPage from "./pages/SessionDetailPage";
 import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
@@ -31,6 +32,7 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
       </Route>
+      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route
         path={ROUTES.DOZENT_ARCHIV}

@@ -29,6 +29,19 @@ export interface SessionSummaryDto {
   name: string;
   code: string;
   status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  datum: string;
+  veranstaltungId: number;
+  veranstaltungName: string;
+}
+
+export interface SessionDetailDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  datum: string;
+  startZeit: string;
+  endZeit: string | null;
   veranstaltungName: string;
 }
 

@@ -35,7 +35,23 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.DOZENT_VERANSTALTUNG_NEW]: 3,
 };
 
+export function buildSessionDetailPath(sessionId: number): string {
+  return `${ROUTES.DOZENT_SESSIONS}/${sessionId}`;
+}
+
+// Detailseite einer einzelnen Session ("/dozent/sessions/123") – dynamisch,
+// deshalb kein fixer Eintrag in ROUTES/ROUTE_DEPTH, sondern per Präfix erkannt.
+// Ausgenommen "neu", das ist eine eigene (modale) Route, keine Session-ID.
+function isSessionDetailRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) &&
+    pathname !== ROUTES.DOZENT_SESSION_NEW &&
+    /^\/\d+$/.test(pathname.slice(ROUTES.DOZENT_SESSIONS.length))
+  );
+}
+
 export function getRouteDepth(pathname: string): number | undefined {
+  if (isSessionDetailRoute(pathname)) return ROUTE_DEPTH[ROUTES.DOZENT_SESSION_NEW];
   return ROUTE_DEPTH[pathname];
 }
 
@@ -51,7 +67,9 @@ const DASHBOARD_SHELL_ROUTES: Set<string> = new Set([
 ]);
 
 export function sharesLayoutShell(pathnameA: string, pathnameB: string): boolean {
-  return DASHBOARD_SHELL_ROUTES.has(pathnameA) && DASHBOARD_SHELL_ROUTES.has(pathnameB);
+  const isShellA = DASHBOARD_SHELL_ROUTES.has(pathnameA) || isSessionDetailRoute(pathnameA);
+  const isShellB = DASHBOARD_SHELL_ROUTES.has(pathnameB) || isSessionDetailRoute(pathnameB);
+  return isShellA && isShellB;
 }
 
 // Routen, die sich als Overlay (Backdrop + zentrierte Karte) über dem
