@@ -22,6 +22,7 @@ export default function QrScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [permission, setPermission] = useState<PermissionState>("requesting");
   const [scanError, setScanError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -48,10 +49,7 @@ export default function QrScannerPage() {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
-        }
+        setStream(stream);
         setPermission("granted");
       })
       .catch(() => setPermission("denied"));
@@ -61,6 +59,17 @@ export default function QrScannerPage() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  // Das <video>-Element existiert erst, sobald permission "granted" ist
+  // (siehe JSX unten) – der Stream kann also nicht schon in dem Effekt
+  // oben zugewiesen werden, der ihn von der Kamera holt. Dieser Effekt
+  // läuft nach dem Mount des <video>-Elements und verkabelt ihn dann.
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      void videoRef.current.play();
+    }
+  }, [stream, permission]);
 
   const handleDetected = useCallback(
     async (code: string) => {
