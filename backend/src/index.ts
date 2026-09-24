@@ -4,6 +4,7 @@ import session from "express-session";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./prisma";
+import { authRouter } from "./routes/auth";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
@@ -20,6 +21,8 @@ app.use(
     cookie: { httpOnly: true, sameSite: "lax" },
   })
 );
+
+app.use("/api/auth", authRouter);
 
 // simple healthcheck, prueft auch die DB-Verbindung
 app.get("/api/health", async (_req, res) => {
