@@ -5,6 +5,15 @@ export interface DozentDto {
   email: string;
 }
 
+export async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(path, { credentials: "include" });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message ?? "Etwas ist schiefgelaufen.");
+  }
+  return data as T;
+}
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
     method: "POST",

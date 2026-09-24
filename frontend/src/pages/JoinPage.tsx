@@ -3,12 +3,14 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { BackButton, Button, Card, Checkbox, Field, Input } from "../components/ui";
+import { getJson } from "../lib/api";
 import { ROLE } from "../lib/role";
 import { setStoredSession } from "../lib/session";
 import { ROUTES } from "../routes";
 
 const CODE_LENGTH = 6;
 const CODE_PATTERN = new RegExp(`^[A-Za-z0-9]{${CODE_LENGTH}}$`);
+const CODE_NOT_FOUND_MESSAGE = "Diesen Code gibt es nicht. Bitte prüfe deine Eingabe.";
 
 const joinSchema = z.object({
   name: z.string().trim().min(1, "Bitte gib deinen Namen ein."),
@@ -26,18 +28,28 @@ export default function JoinPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm<JoinFormValues>({
     resolver: zodResolver(joinSchema),
     defaultValues: { name: "", code: "", anonymous: true },
   });
 
-  const onSubmit = (values: JoinFormValues) => {
+  const onSubmit = async (values: JoinFormValues) => {
+    const code = values.code.toUpperCase();
+
+    try {
+      await getJson(`/api/sessions/by-code/${code}`);
+    } catch {
+      setError("code", { message: CODE_NOT_FOUND_MESSAGE });
+      return;
+    }
+
     setStoredSession({
       role: ROLE.STUDENT,
       name: values.anonymous ? undefined : values.name,
       anonymous: values.anonymous,
-      sessionCode: values.code.toUpperCase(),
+      sessionCode: code,
     });
     navigate(ROUTES.SESSION);
   };
@@ -64,7 +76,9 @@ export default function JoinPage() {
 
             <Checkbox label="Anonym teilnehmen" defaultChecked {...register("anonymous")} />
 
-            <Button type="submit">Beitreten</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Wird geprüft..." : "Beitreten"}
+            </Button>
           </form>
         </Card>
       </div>
