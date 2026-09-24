@@ -27,13 +27,16 @@ const RESUME_TARGET: Record<Role, string> = {
 };
 
 export default function OnboardingPage() {
-  const [role, setRole] = useState<Role>(ROLE.STUDENT);
-  const navigate = useNavigate();
   const storedSession = getStoredSession();
+  const [role, setRole] = useState<Role>(storedSession?.role ?? ROLE.STUDENT);
+  const navigate = useNavigate();
 
   const handleWeiter = () => {
-    if (storedSession) {
-      navigate(RESUME_TARGET[storedSession.role]);
+    // Nur resumen, wenn die gespeicherte Session zur aktuell gewählten
+    // Rolle passt. Wählt man aktiv die andere Rolle, will man erkennbar
+    // neu starten statt die alte Session fortzusetzen.
+    if (storedSession && storedSession.role === role) {
+      navigate(RESUME_TARGET[role]);
       return;
     }
     navigate(ROLE_TARGET[role]);
