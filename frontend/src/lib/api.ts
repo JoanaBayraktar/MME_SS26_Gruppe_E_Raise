@@ -11,6 +11,51 @@ export interface VeranstaltungDto {
   kuerzel: string;
 }
 
+export interface VeranstaltungSummaryDto extends VeranstaltungDto {
+  sessionCount: number;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+}
+
+export interface ActiveSessionDto {
+  id: number;
+  name: string;
+  code: string;
+  startZeit: string;
+  veranstaltungName: string;
+}
+
+export interface SessionSummaryDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  datum: string;
+  veranstaltungId: number;
+  veranstaltungName: string;
+}
+
+export interface SessionDetailDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  datum: string;
+  startZeit: string;
+  endZeit: string | null;
+  veranstaltungName: string;
+}
+
+export interface CreatedSessionDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+}
+
+export interface SessionCodeDto {
+  code: string;
+}
+
 export class ApiError extends Error {
   status: number;
 
