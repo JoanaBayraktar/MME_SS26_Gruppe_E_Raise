@@ -4,6 +4,9 @@ const SESSION_STORAGE_KEY = "raise.session";
 
 export interface StoredSession {
   role: Role;
+  name?: string;
+  anonymous?: boolean;
+  sessionCode?: string;
 }
 
 export function getStoredSession(): StoredSession | null {

@@ -1,7 +1,20 @@
 export const ROUTES = {
   ONBOARDING: "/",
   JOIN: "/join",
+  SESSION: "/session",
   LOGIN: "/login",
   DOZENT_DASHBOARD: "/dozent",
   DESIGN_SYSTEM: "/design-system",
 } as const;
+
+// Tiefe jeder Route in der Navigationshierarchie (Onboarding = Wurzel).
+// Bestimmt die Richtung der Seitenübergangs-Animation unabhängig vom
+// Browser-Verlauf (der z. B. nach einem Reload leer sein kann).
+export const ROUTE_DEPTH: Record<string, number> = {
+  [ROUTES.ONBOARDING]: 0,
+  [ROUTES.DESIGN_SYSTEM]: 0,
+  [ROUTES.JOIN]: 1,
+  [ROUTES.LOGIN]: 1,
+  [ROUTES.SESSION]: 2,
+  [ROUTES.DOZENT_DASHBOARD]: 2,
+};

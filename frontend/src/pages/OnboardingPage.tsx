@@ -22,7 +22,7 @@ const ROLE_TARGET: Record<Role, string> = {
 };
 
 const RESUME_TARGET: Record<Role, string> = {
-  [ROLE.STUDENT]: ROUTES.JOIN,
+  [ROLE.STUDENT]: ROUTES.SESSION,
   [ROLE.DOZENT]: ROUTES.DOZENT_DASHBOARD,
 };
 
