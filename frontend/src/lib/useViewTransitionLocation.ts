@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Location, useLocation } from "react-router-dom";
-import { ROUTE_DEPTH } from "../routes";
+import { getRouteDepth as lookupRouteDepth } from "../routes";
 
 export const TRANSITION_DIRECTION = {
   FORWARD: "forward",
@@ -16,7 +16,7 @@ export const TRANSITION_DIRECTION_ATTRIBUTE = "data-transition-direction";
 const UNKNOWN_ROUTE_DEPTH = Number.POSITIVE_INFINITY;
 
 function getRouteDepth(pathname: string): number {
-  return ROUTE_DEPTH[pathname] ?? UNKNOWN_ROUTE_DEPTH;
+  return lookupRouteDepth(pathname) ?? UNKNOWN_ROUTE_DEPTH;
 }
 
 // Verzögert das Rendern der neuen Route, bis sie per View Transitions API

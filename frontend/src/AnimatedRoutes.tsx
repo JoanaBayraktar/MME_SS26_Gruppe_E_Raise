@@ -10,6 +10,7 @@ import SessionPlaceholderPage from "./pages/SessionPlaceholderPage";
 import DozentDashboardPlaceholderPage from "./pages/DozentDashboardPlaceholderPage";
 import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
+import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
 import { ROUTES } from "./routes";
 import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
 
@@ -28,6 +29,7 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPlaceholderPage />} />
       <Route path={ROUTES.DOZENT_SESSION_NEW} element={<NewSessionPage />} />
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
+      <Route path={ROUTES.DOZENT_VERANSTALTUNG_DETAIL} element={<VeranstaltungDetailPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
     </Routes>
   );

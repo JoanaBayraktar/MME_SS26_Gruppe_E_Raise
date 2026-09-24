@@ -1,15 +1,18 @@
+import { Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, BackButton, Badge, Button, Card, EmptyState } from "../components/ui";
 import { getJson, isUnauthorized, VeranstaltungDto } from "../lib/api";
-import { ROUTES } from "../routes";
-import { Layers } from "lucide-react";
+import { buildVeranstaltungDetailPath, ROUTES } from "../routes";
 
 type LoadState = "loading" | "loaded" | "error";
 
 // Das echte Veranstaltungs-Dashboard (Status-Übersicht, Bearbeiten, ...)
 // kommt erst mit #11. Bis dahin: echte Liste der eigenen Veranstaltungen
-// plus Einstiegspunkte für #10 (Veranstaltung) und #13 (Session).
+// plus Einstieg für #10 (Veranstaltung). Sessions werden bewusst nicht
+// mehr von hier aus angelegt, sondern erst nach Auswahl einer konkreten
+// Veranstaltung (siehe VeranstaltungDetailPage) – #13 hängt sonst an
+// keiner eindeutigen Veranstaltung.
 export default function DozentDashboardPlaceholderPage() {
   const navigate = useNavigate();
   const [veranstaltungen, setVeranstaltungen] = useState<VeranstaltungDto[]>([]);
@@ -53,21 +56,25 @@ export default function DozentDashboardPlaceholderPage() {
           )}
 
           {veranstaltungen.map((veranstaltung) => (
-            <Card key={veranstaltung.id}>
-              <p className="font-semibold text-gray-900">{veranstaltung.name}</p>
-              <Badge tone="neutral" className="mt-2">
-                {veranstaltung.kuerzel}
-              </Badge>
-            </Card>
+            <button
+              key={veranstaltung.id}
+              type="button"
+              onClick={() => navigate(buildVeranstaltungDetailPath(veranstaltung.id))}
+              className="text-left"
+            >
+              <Card className="transition hover:border-brand">
+                <p className="font-semibold text-gray-900">{veranstaltung.name}</p>
+                <Badge tone="neutral" className="mt-2">
+                  {veranstaltung.kuerzel}
+                </Badge>
+              </Card>
+            </button>
           ))}
         </div>
 
-        <div className="mt-6 flex flex-col gap-3">
-          <Button variant="outline" onClick={() => navigate(ROUTES.DOZENT_SESSION_NEW)}>
-            + Neue Session
-          </Button>
-          <Button onClick={() => navigate(ROUTES.DOZENT_VERANSTALTUNG_NEW)}>+ Neue Veranstaltung</Button>
-        </div>
+        <Button className="mt-6" onClick={() => navigate(ROUTES.DOZENT_VERANSTALTUNG_NEW)}>
+          + Neue Veranstaltung
+        </Button>
       </div>
     </div>
   );

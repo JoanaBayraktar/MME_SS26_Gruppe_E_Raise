@@ -22,6 +22,34 @@ veranstaltungenRouter.get("/", async (req, res) => {
   res.json(veranstaltungen.map((v) => ({ id: v.id, name: v.name, kuerzel: v.kuerzel })));
 });
 
+veranstaltungenRouter.get("/:id", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const id = Number(req.params.id);
+  const veranstaltung = await prisma.veranstaltung.findFirst({
+    where: { id, dozentId: req.session.dozentId },
+    include: { sessions: { orderBy: { startZeit: "desc" } } },
+  });
+
+  if (!veranstaltung) {
+    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
+  }
+
+  res.json({
+    id: veranstaltung.id,
+    name: veranstaltung.name,
+    kuerzel: veranstaltung.kuerzel,
+    sessions: veranstaltung.sessions.map((s) => ({
+      id: s.id,
+      name: s.name,
+      code: s.code,
+      status: s.status,
+    })),
+  });
+});
+
 veranstaltungenRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
     return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });

@@ -9,8 +9,13 @@ export const ROUTES = {
   DOZENT_DASHBOARD: "/dozent",
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
+  DOZENT_VERANSTALTUNG_DETAIL: "/dozent/veranstaltungen/:id",
   DESIGN_SYSTEM: "/design-system",
 } as const;
+
+export function buildVeranstaltungDetailPath(id: number | string): string {
+  return `/dozent/veranstaltungen/${id}`;
+}
 
 // Tiefe jeder Route in der Navigationshierarchie (Onboarding = Wurzel).
 // Bestimmt die Richtung der Seitenübergangs-Animation unabhängig vom
@@ -28,3 +33,14 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.DOZENT_SESSION_NEW]: 3,
   [ROUTES.DOZENT_VERANSTALTUNG_NEW]: 3,
 };
+
+// /dozent/veranstaltungen/:id hat immer die Tiefe 3, unabhängig von der
+// konkreten ID – kann daher nicht als fixer Key in ROUTE_DEPTH stehen.
+const VERANSTALTUNG_DETAIL_PREFIX = "/dozent/veranstaltungen/";
+const VERANSTALTUNG_DETAIL_DEPTH = 3;
+
+export function getRouteDepth(pathname: string): number | undefined {
+  if (pathname in ROUTE_DEPTH) return ROUTE_DEPTH[pathname];
+  if (pathname.startsWith(VERANSTALTUNG_DETAIL_PREFIX)) return VERANSTALTUNG_DETAIL_DEPTH;
+  return undefined;
+}

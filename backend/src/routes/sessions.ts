@@ -24,6 +24,7 @@ async function generateUniqueCode(): Promise<string> {
 }
 
 const createSessionSchema = z.object({
+  veranstaltungId: z.number().int().positive(),
   name: z.string().trim().min(1, "Bitte gib einen Sitzungsnamen ein."),
   startZeit: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Bitte gib ein gültiges Datum ein."),
 });
@@ -50,13 +51,13 @@ sessionsRouter.post("/", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ message: parsed.error.issues[0].message });
   }
-  const { name, startZeit } = parsed.data;
+  const { veranstaltungId, name, startZeit } = parsed.data;
 
-  const veranstaltung = await prisma.veranstaltung.findFirst({ where: { dozentId: req.session.dozentId } });
+  const veranstaltung = await prisma.veranstaltung.findFirst({
+    where: { id: veranstaltungId, dozentId: req.session.dozentId },
+  });
   if (!veranstaltung) {
-    return res.status(400).json({
-      message: "Du hast noch keine Veranstaltung angelegt. Lege zuerst eine Veranstaltung an.",
-    });
+    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
   }
 
   const code = await generateUniqueCode();
