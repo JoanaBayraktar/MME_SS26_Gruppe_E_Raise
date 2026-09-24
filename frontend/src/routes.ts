@@ -7,6 +7,7 @@ export const ROUTES = {
   REGISTER: "/register",
   FORGOT_PASSWORD: "/passwort-vergessen",
   DOZENT_DASHBOARD: "/dozent",
+  DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DESIGN_SYSTEM: "/design-system",
 } as const;
 
@@ -23,4 +24,5 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.REGISTER]: 2,
   [ROUTES.FORGOT_PASSWORD]: 2,
   [ROUTES.JOIN_QR]: 2,
+  [ROUTES.DOZENT_SESSION_NEW]: 3,
 };

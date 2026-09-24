@@ -1,5 +1,32 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../prisma";
+
+const CODE_LENGTH = 6;
+const CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const CODE_GENERATION_MAX_ATTEMPTS = 10;
+
+function generateCode(): string {
+  let code = "";
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
+async function generateUniqueCode(): Promise<string> {
+  for (let attempt = 0; attempt < CODE_GENERATION_MAX_ATTEMPTS; attempt++) {
+    const code = generateCode();
+    const existing = await prisma.session.findUnique({ where: { code } });
+    if (!existing) return code;
+  }
+  throw new Error("Konnte keinen eindeutigen Code generieren.");
+}
+
+const createSessionSchema = z.object({
+  name: z.string().trim().min(1, "Bitte gib einen Sitzungsnamen ein."),
+  startZeit: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Bitte gib ein gültiges Datum ein."),
+});
 
 export const sessionsRouter = Router();
 
@@ -12,4 +39,39 @@ sessionsRouter.get("/by-code/:code", async (req, res) => {
   }
 
   res.json({ id: session.id, name: session.name, status: session.status });
+});
+
+sessionsRouter.post("/", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const parsed = createSessionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: parsed.error.issues[0].message });
+  }
+  const { name, startZeit } = parsed.data;
+
+  const veranstaltung = await prisma.veranstaltung.findFirst({ where: { dozentId: req.session.dozentId } });
+  if (!veranstaltung) {
+    return res.status(400).json({
+      message: "Du hast noch keine Veranstaltung angelegt. Lege zuerst eine Veranstaltung an.",
+    });
+  }
+
+  const code = await generateUniqueCode();
+  const startDate = new Date(startZeit);
+
+  const session = await prisma.session.create({
+    data: {
+      veranstaltungId: veranstaltung.id,
+      name,
+      datum: startDate,
+      startZeit: startDate,
+      code,
+      qrCode: code,
+    },
+  });
+
+  res.status(201).json({ id: session.id, name: session.name, code: session.code, status: session.status });
 });
