@@ -6,8 +6,6 @@ import { getRouteDepth as lookupRouteDepth, isModalRoute, sharesLayoutShell } fr
 export const TRANSITION_DIRECTION = {
   FORWARD: "forward",
   BACK: "back",
-  MODAL_OPEN: "modal-open",
-  MODAL_CLOSE: "modal-close",
 } as const;
 
 // Attribut auf <html>, über das index.css die Animation spiegelt (siehe dort)
@@ -39,23 +37,23 @@ export function useViewTransitionLocation(): Location {
   useLayoutEffect(() => {
     if (location.pathname === previousPathname.current) return;
 
-    if (sharesLayoutShell(location.pathname, previousPathname.current)) {
+    // Modal-Routen rendern als Overlay innerhalb ihrer Elternseite (siehe
+    // NewSessionPage/Outlet in SessionsPage) und animieren sich selbst per
+    // CSS – kein Seitenübergang für die Elternseite darunter nötig.
+    if (
+      sharesLayoutShell(location.pathname, previousPathname.current) ||
+      isModalRoute(location.pathname) ||
+      isModalRoute(previousPathname.current)
+    ) {
       previousPathname.current = location.pathname;
       setDisplayedLocation(location);
       return;
     }
 
-    let direction: (typeof TRANSITION_DIRECTION)[keyof typeof TRANSITION_DIRECTION];
-    if (isModalRoute(location.pathname)) {
-      direction = TRANSITION_DIRECTION.MODAL_OPEN;
-    } else if (isModalRoute(previousPathname.current)) {
-      direction = TRANSITION_DIRECTION.MODAL_CLOSE;
-    } else {
-      direction =
-        getRouteDepth(location.pathname) < getRouteDepth(previousPathname.current)
-          ? TRANSITION_DIRECTION.BACK
-          : TRANSITION_DIRECTION.FORWARD;
-    }
+    const direction =
+      getRouteDepth(location.pathname) < getRouteDepth(previousPathname.current)
+        ? TRANSITION_DIRECTION.BACK
+        : TRANSITION_DIRECTION.FORWARD;
     previousPathname.current = location.pathname;
     document.documentElement.setAttribute(TRANSITION_DIRECTION_ATTRIBUTE, direction);
 

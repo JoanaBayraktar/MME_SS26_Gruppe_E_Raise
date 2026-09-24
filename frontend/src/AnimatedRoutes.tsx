@@ -28,8 +28,9 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
-      <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />} />
-      <Route path={ROUTES.DOZENT_SESSION_NEW} element={<NewSessionPage />} />
+      <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
+        <Route path="neu" element={<NewSessionPage />} />
+      </Route>
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route
         path={ROUTES.DOZENT_ARCHIV}

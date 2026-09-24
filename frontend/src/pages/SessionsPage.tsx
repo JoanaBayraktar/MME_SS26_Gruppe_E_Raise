@@ -1,6 +1,6 @@
 import { Calendar, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { Alert, Badge, Button, Card, DashboardLayout, EmptyState } from "../components/ui";
 import { DozentDto, getJson, isUnauthorized, SessionSummaryDto } from "../lib/api";
 import { DOZENT_NAV_ITEMS } from "../lib/dozentNav";
@@ -9,13 +9,17 @@ import { ROUTES } from "../routes";
 
 type LoadState = "loading" | "loaded" | "error";
 
+export interface SessionsPageContext {
+  reloadSessions: () => void;
+}
+
 export default function SessionsPage() {
   const navigate = useNavigate();
   const [dozent, setDozent] = useState<DozentDto | null>(null);
   const [sessions, setSessions] = useState<SessionSummaryDto[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
 
-  useEffect(() => {
+  const load = () => {
     Promise.all([getJson<DozentDto>("/api/auth/me"), getJson<SessionSummaryDto[]>("/api/sessions")])
       .then(([dozentData, sessionsData]) => {
         setDozent(dozentData);
@@ -29,7 +33,9 @@ export default function SessionsPage() {
         }
         setLoadState("error");
       });
-  }, [navigate]);
+  };
+
+  useEffect(load, [navigate]);
 
   return (
     <DashboardLayout
@@ -88,6 +94,8 @@ export default function SessionsPage() {
           </table>
         </Card>
       )}
+
+      <Outlet context={{ reloadSessions: load } satisfies SessionsPageContext} />
     </DashboardLayout>
   );
 }

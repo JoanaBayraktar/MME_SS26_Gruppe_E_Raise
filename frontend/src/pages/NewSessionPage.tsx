@@ -1,11 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { z } from "zod";
 import { Alert, Button, Card, Field, Input, Switch } from "../components/ui";
 import { CreatedSessionDto, getJson, postJson, SessionCodeDto, VeranstaltungDto } from "../lib/api";
+import { SessionsPageContext } from "./SessionsPage";
 import { ROUTES } from "../routes";
+
+// Dauer der Ein-/Ausblend-Animation des Overlays – muss zur CSS-Transition
+// unten (duration-200) passen, damit close() erst nach dem Ausblenden navigiert.
+const OVERLAY_TRANSITION_MS = 200;
 
 const newSessionSchema = z
   .object({
@@ -27,12 +32,16 @@ type CodeLoadState = "loading" | "loaded" | "error";
 
 export default function NewSessionPage() {
   const navigate = useNavigate();
+  const { reloadSessions } = useOutletContext<SessionsPageContext>();
   const [veranstaltungen, setVeranstaltungen] = useState<VeranstaltungDto[]>([]);
   const [veranstaltungenState, setVeranstaltungenState] = useState<VeranstaltungenLoadState>("loading");
   const [autoStart, setAutoStart] = useState(true);
   const [code, setCode] = useState<string | null>(null);
   const [codeState, setCodeState] = useState<CodeLoadState>("loading");
   const [serverError, setServerError] = useState<string | null>(null);
+  // Overlay blendet erst nach dem Mount ein (statt sofort sichtbar zu sein),
+  // damit die CSS-Transition greift; beim Schließen erst ausblenden, dann navigieren.
+  const [visible, setVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -66,7 +75,15 @@ export default function NewSessionPage() {
 
   useEffect(loadCode, []);
 
-  const close = () => navigate(ROUTES.DOZENT_SESSIONS);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const close = () => {
+    setVisible(false);
+    window.setTimeout(() => navigate(ROUTES.DOZENT_SESSIONS), OVERLAY_TRANSITION_MS);
+  };
 
   const onSubmit = async (values: NewSessionFormValues) => {
     setServerError(null);
@@ -79,6 +96,7 @@ export default function NewSessionPage() {
         autoStart,
         code: code ?? undefined,
       });
+      reloadSessions();
       close();
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Session konnte nicht angelegt werden.");
@@ -86,8 +104,16 @@ export default function NewSessionPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-6" onClick={close}>
-      <Card className="w-full max-w-lg p-8" onClick={(event) => event.stopPropagation()}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-6 transition-opacity duration-200 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+      onClick={close}
+    >
+      <Card
+        className={`w-full max-w-lg p-8 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
+        onClick={(event) => event.stopPropagation()}
+      >
         <h1 className="text-xl font-bold text-gray-900">Neue Session</h1>
         <p className="mt-1 text-sm text-gray-500">Bereite eine neue Vorlesungsstunde vor.</p>
 
