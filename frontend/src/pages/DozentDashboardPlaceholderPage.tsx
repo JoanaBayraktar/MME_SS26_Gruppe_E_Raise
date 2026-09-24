@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, BackButton, Badge, Button, Card, EmptyState } from "../components/ui";
-import { getJson, VeranstaltungDto } from "../lib/api";
+import { getJson, isUnauthorized, VeranstaltungDto } from "../lib/api";
 import { ROUTES } from "../routes";
 import { Layers } from "lucide-react";
 
@@ -21,8 +21,14 @@ export default function DozentDashboardPlaceholderPage() {
         setVeranstaltungen(data);
         setLoadState("loaded");
       })
-      .catch(() => setLoadState("error"));
-  }, []);
+      .catch((err) => {
+        if (isUnauthorized(err)) {
+          navigate(ROUTES.LOGIN);
+          return;
+        }
+        setLoadState("error");
+      });
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-6 py-12">

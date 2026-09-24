@@ -11,11 +11,25 @@ export interface VeranstaltungDto {
   kuerzel: string;
 }
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
 export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path, { credentials: "include" });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.message ?? "Etwas ist schiefgelaufen.");
+    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
   }
   return data as T;
 }
@@ -29,7 +43,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.message ?? "Etwas ist schiefgelaufen.");
+    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
   }
   return data as T;
 }
