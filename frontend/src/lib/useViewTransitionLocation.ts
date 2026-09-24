@@ -1,11 +1,13 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Location, useLocation } from "react-router-dom";
-import { getRouteDepth as lookupRouteDepth, sharesLayoutShell } from "../routes";
+import { getRouteDepth as lookupRouteDepth, isModalRoute, sharesLayoutShell } from "../routes";
 
 export const TRANSITION_DIRECTION = {
   FORWARD: "forward",
   BACK: "back",
+  MODAL_OPEN: "modal-open",
+  MODAL_CLOSE: "modal-close",
 } as const;
 
 // Attribut auf <html>, über das index.css die Animation spiegelt (siehe dort)
@@ -43,10 +45,17 @@ export function useViewTransitionLocation(): Location {
       return;
     }
 
-    const direction =
-      getRouteDepth(location.pathname) < getRouteDepth(previousPathname.current)
-        ? TRANSITION_DIRECTION.BACK
-        : TRANSITION_DIRECTION.FORWARD;
+    let direction: (typeof TRANSITION_DIRECTION)[keyof typeof TRANSITION_DIRECTION];
+    if (isModalRoute(location.pathname)) {
+      direction = TRANSITION_DIRECTION.MODAL_OPEN;
+    } else if (isModalRoute(previousPathname.current)) {
+      direction = TRANSITION_DIRECTION.MODAL_CLOSE;
+    } else {
+      direction =
+        getRouteDepth(location.pathname) < getRouteDepth(previousPathname.current)
+          ? TRANSITION_DIRECTION.BACK
+          : TRANSITION_DIRECTION.FORWARD;
+    }
     previousPathname.current = location.pathname;
     document.documentElement.setAttribute(TRANSITION_DIRECTION_ATTRIBUTE, direction);
 
