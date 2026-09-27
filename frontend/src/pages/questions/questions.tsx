@@ -39,42 +39,45 @@ export default function Questions() {
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
 
-  // 1. DATEN BEIM LADEN ABRUFEN (Nutzt den Service)
+  // Daten abrufen
   useEffect(() => {
     fetchQuestions()
       .then((data) => setQuestions(data))
       .catch((err) => console.error("Fehler beim Laden:", err));
   }, []);
 
-  // 2. FRAGE ABSENDEN (Nutzt den Service)
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const text = newQuestionText.trim();
-    if (!text) return;
+  // Frage absenden
+const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  const text = newQuestionText.trim();
+  if (!text) return;
 
-    try {
-      const savedQuestion = await sendQuestion({
-        text,
-        author: "Du (Teilnehmer)",
-        slideNumber: slideNumber ? Number(slideNumber) : undefined,
-        topic: selectedTopic || "Allgemein",
-      });
+  try {
+    // Autor über separate Methode ermitteln (berücksichtigt Anonym-Status)
+    const authorName = await determineAuthorName();
 
-      // UI aktualisieren mit der Antwort aus dem Backend (inkl. echter DB-ID)
-      setQuestions((current) => [savedQuestion, ...current]);
-      
-      // Formular zurücksetzen
-      setNewQuestionText("");
-      setSlideNumber("");
-      setSelectedTopic("");
-      setIsSlideOpen(false);
-      setIsTopicOpen(false);
-    } catch (error) {
-      console.error("Fehler beim Absenden:", error);
-    }
-  };
+    const savedQuestion = await sendQuestion({
+      text,
+      author: authorName,
+      slideNumber: slideNumber ? Number(slideNumber) : undefined,
+      topic: selectedTopic || "Allgemein",
+    });
 
-  // Upvote-Logik (bleibt vorerst lokal im State)
+    // UI aktualisieren mit der Antwort aus dem Backend (inkl. echter DB-ID)
+    setQuestions((current) => [savedQuestion, ...current]);
+    
+    // Formular zurücksetzen
+    setNewQuestionText("");
+    setSlideNumber("");
+    setSelectedTopic("");
+    setIsSlideOpen(false);
+    setIsTopicOpen(false);
+  } catch (error) {
+    console.error("Fehler beim Absenden:", error);
+  }
+};
+
+  // Upvote-Logik erstmal lokal im State - Umsetzung mit Datenbank noch notwendig
   const handleVote = (questionId: number) => {
     setQuestions((current) =>
       current.map((q) =>
@@ -83,7 +86,7 @@ export default function Questions() {
     );
   };
 
-  const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"];
+  const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"]; //Declaration von demo Themen - von Datenbank überschreiben...
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-24 animate-fade-in motion-reduce:animate-none">
@@ -208,4 +211,8 @@ export default function Questions() {
       </div>
     </div>
   );
+}
+
+function determineAuthorName() {
+  throw new Error("Function not implemented.");
 }
