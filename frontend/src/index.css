@@ -2,63 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Seitenübergänge über die native View Transitions API: alte Seite fliegt
-   leicht nach links raus während die neue von rechts reinkommt, beides
-   gleichzeitig statt hartem Cut. Siehe useViewTransitionLocation.ts */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+.scrollbar-fade {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 500ms ease;
 }
 
-::view-transition-old(root) {
-  animation-name: raise-screen-exit;
+.scrollbar-fade::-webkit-scrollbar {
+  width: 6px;
 }
 
-::view-transition-new(root) {
-  animation-name: raise-screen-enter;
+.scrollbar-fade::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Zurück-Navigation (siehe useViewTransitionLocation.ts): gespiegelte Richtung */
-html[data-transition-direction="back"]::view-transition-old(root) {
-  animation-name: raise-screen-exit-reverse;
+.scrollbar-fade::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: transparent;
+  transition: background-color 500ms ease;
 }
 
-html[data-transition-direction="back"]::view-transition-new(root) {
-  animation-name: raise-screen-enter-reverse;
+.scrollbar-fade-visible {
+  scrollbar-color: rgb(156 163 175 / 0.8) transparent;
+  transition: none;
 }
 
-@keyframes raise-screen-exit {
-  to {
-    transform: translateX(-24px);
-    opacity: 0;
-  }
-}
-
-@keyframes raise-screen-enter {
-  from {
-    transform: translateX(32px);
-    opacity: 0;
-  }
-}
-
-@keyframes raise-screen-exit-reverse {
-  to {
-    transform: translateX(32px);
-    opacity: 0;
-  }
-}
-
-@keyframes raise-screen-enter-reverse {
-  from {
-    transform: translateX(-24px);
-    opacity: 0;
-  }
+.scrollbar-fade-visible::-webkit-scrollbar-thumb {
+  background-color: rgb(156 163 175 / 0.8);
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
+  .scrollbar-fade::-webkit-scrollbar-thumb {
+    transition: none;
   }
 }
