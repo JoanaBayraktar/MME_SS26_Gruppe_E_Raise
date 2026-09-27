@@ -20,14 +20,10 @@ export function AnimatedRoutes() {
       />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
-        <Route index element={<Questions />} />
-        <Route path="questions" element={<Questions />} />
-        <Route path="umfrage" element={<Umfrage />} />
-        <Route path="archiv" element={<Archiv />} />
+        <Route path={ROUTES.QUESTIONS} element={<Questions />} />
+        <Route path={ROUTES.UMFRAGE} element={<Umfrage />} />
+        <Route path={ROUTES.ARCHIV} element={<Archiv />} />
       </Route>
-      <Route path="/questions" element={<Navigate to={ROUTES.QUESTIONS} replace />} />
-      <Route path="/umfrage" element={<Navigate to={ROUTES.UMFRAGE} replace />} />
-      <Route path="/archiv" element={<Navigate to={ROUTES.ARCHIV} replace />} />
     </Routes>
   );
 }

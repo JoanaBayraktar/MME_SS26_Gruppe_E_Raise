@@ -1,13 +1,53 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown } from "lucide-react";
-import type { NavigationPageContext } from "../NavigationPage";
+
+interface Question {
+  id: number;
+  author: string;
+  time: string;
+  text: string;
+  tag: string;
+  topic?: string;
+  slideNumber?: number;
+  comments: number;
+  votes: number;
+  voted: boolean;
+}
+
+interface QuestionMetadata {
+  slideNumber?: number;
+  topic?: string;
+}
+
+const INITIAL_QUESTIONS: Question[] = [
+  {
+    id: 1,
+    author: "Anonymer Fuchs",
+    time: "10:22",
+    text: "Können wir Folie 12 nochmal genauer durchgehen?",
+    tag: "gefragt",
+    topic: "Einführung & Grundlagen",
+    comments: 3,
+    votes: 14,
+    voted: false,
+  },
+  {
+    id: 2,
+    author: "Lena Mayr",
+    time: "10:18",
+    text: "Wie hängt das mit dem Beispiel aus der letzten Woche zusammen?",
+    tag: "Diskussion",
+    topic: "Diskussion & Ausblick",
+    comments: 5,
+    votes: 9,
+    voted: false,
+  },
+];
 
 export default function Questions() {
-  const { questions, newQuestionText, onQuestionTextChange, onAddQuestion, onVote } =
-    useOutletContext<NavigationPageContext>();
-
-  // Lokaler State für die aufklappbaren Elemente
+  const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
+  const [newQuestionText, setNewQuestionText] = useState("");
+  // State for the slide and topic selectors.
   const [isSlideOpen, setIsSlideOpen] = useState(false);
   const [slideNumber, setSlideNumber] = useState("");
   const [isTopicOpen, setIsTopicOpen] = useState(false);
@@ -26,21 +66,51 @@ export default function Questions() {
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
 
-  // Beispielhafte Themen vom Professor
-  const professorTopics = [
-    "Einführung & Grundlagen",
-    "Methodik & Analyse",
-    "Ergebnisse der Studie",
-    "Diskussion & Ausblick"
-  ];
+  const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"];
+
+  const handleAddQuestion = ({ slideNumber, topic }: QuestionMetadata) => {
+    const text = newQuestionText.trim();
+    if (!text) return;
+
+    setQuestions((current) => [
+      {
+        id: Date.now(),
+        author: "Du (Teilnehmer)",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text,
+        tag: "neu",
+        ...(slideNumber ? { slideNumber } : {}),
+        ...(topic ? { topic } : {}),
+        comments: 0,
+        votes: 1,
+        voted: true,
+      },
+      ...current,
+    ]);
+    setNewQuestionText("");
+  };
+
+  const handleVote = (questionId: number) => {
+    setQuestions((current) =>
+      current.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              votes: question.voted ? question.votes - 1 : question.votes + 1,
+              voted: !question.voted,
+            }
+          : question,
+      ),
+    );
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!newQuestionText.trim()) return;
-    onAddQuestion({
-      ...(slideNumber ? { slideNumber: Number(slideNumber) } : {}),
-      ...(selectedTopic ? { topic: selectedTopic } : {}),
-    });
+    const questionDetails: { slideNumber?: number; topic?: string } = {};
+    if (slideNumber) questionDetails.slideNumber = Number(slideNumber);
+    if (selectedTopic) questionDetails.topic = selectedTopic;
+    handleAddQuestion(questionDetails);
     setSlideNumber("");
     setSelectedTopic("");
     setIsSlideOpen(false);
@@ -49,7 +119,7 @@ export default function Questions() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-24 animate-fade-in motion-reduce:animate-none">
-      {/* Fragen-Liste (wächst nach oben / scrollbar) */}
+      {/* scrollbare Fragen-Liste wächst nach oben -> korrekte Sortierung */}
       <div className="flex-1 space-y-4 mb-6">
         {questions.map((question) => (
           <div
@@ -85,7 +155,7 @@ export default function Questions() {
                 type="button"
                 aria-label={question.voted ? "Stimme zurücknehmen" : "Frage positiv bewerten"}
                 aria-pressed={question.voted}
-                onClick={() => onVote(question.id)}
+                onClick={() => handleVote(question.id)}
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   question.voted
                     ? "bg-pink-600 text-white"
@@ -100,7 +170,7 @@ export default function Questions() {
         ))}
       </div>
 
-      {/* Unten fixiertes Eingabefeld mit cleanerem Design */}
+      {/* Unten fixiertes Eingabefeld für Frageninput*/}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent pt-8 pb-4 px-4 z-30">
         <div className="max-w-3xl mx-auto">
           <form
@@ -116,12 +186,12 @@ export default function Questions() {
                   }}
                   aria-expanded={isSlideOpen}
                   aria-controls="slide-selection"
-                  className={`flex items-center gap-1 rounded-t-lg rounded-b-none px-3 py-1 text-xs font-medium shadow-sm transition-all ${
+                  className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all ${
                     isSlideOpen
-                      ? "w-40 justify-between bg-pink-600 text-white hover:bg-pink-700"
+                      ? "w-40 justify-between rounded-t-none rounded-b-lg bg-pink-600 text-white hover:bg-pink-700"
                       : slideNumber
-                        ? "bg-pink-600 text-white hover:bg-pink-700"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "rounded-t-lg rounded-b-none bg-pink-600 text-white hover:bg-pink-700"
+                        : "rounded-t-lg rounded-b-none bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
                   <span>{slideNumber ? `Folie ${slideNumber}` : "Folie"}</span>
@@ -159,12 +229,12 @@ export default function Questions() {
                   }}
                   aria-expanded={isTopicOpen}
                   aria-controls="topic-selection"
-                  className={`flex max-w-[160px] items-center gap-1 rounded-t-lg rounded-b-none px-3 py-1 text-xs font-medium shadow-sm transition-all ${
+                  className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all ${
                     isTopicOpen
-                      ? "w-52 max-w-none justify-between bg-pink-600 text-white hover:bg-pink-700"
+                      ? "w-52 justify-between rounded-t-none rounded-b-lg bg-pink-600 text-white hover:bg-pink-700"
                       : selectedTopic
-                        ? "bg-pink-600 text-white hover:bg-pink-700"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "rounded-t-lg rounded-b-none bg-pink-600 text-white hover:bg-pink-700"
+                        : "rounded-t-lg rounded-b-none bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
                   <span className="truncate">{selectedTopic || "Thema"}</span>
@@ -216,7 +286,7 @@ export default function Questions() {
                   type="text"
                   placeholder="Was würdest du gerne wissen?"
                   value={newQuestionText}
-                  onChange={(event) => onQuestionTextChange(event.target.value)}
+                  onChange={(event) => setNewQuestionText(event.target.value)}
                   className="flex-1 bg-transparent px-3 py-1 text-sm text-gray-800 outline-none placeholder:text-gray-400"
                 />
               </div>
