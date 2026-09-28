@@ -31,6 +31,86 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
+// Abrufen von Fragen der session und Aufbereitung für Frontend
+app.get("/api/questions", async (req, res) => {
+  try {
+    const sessionId = req.query.sessionId ? Number(req.query.sessionId) : 1;
+    const fragen = await prisma.frage.findMany({
+      where: { sessionId },
+      orderBy: { erstelltAm: "desc" },
+      include: {
+        upvotes: true,
+        kommentare: true,
+      },
+    });
+
+    const formatted = fragen.map((f) => ({
+      id: f.id,
+      author: f.studentToken ? "Du (Teilnehmer)" : "Anonym",
+      time: new Date(f.erstelltAm).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      text: f.text,
+      tag: f.kapitel || "",
+      topic: f.kapitel || "Allgemein",
+      slideNumber: f.folienNr,
+      comments: f.kommentare.length,
+      votes: f.upvotes.length,
+      voted: false,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("Fehler beim Laden der Fragen:", err);
+    res.status(500).json({ error: "Fehler beim Laden der Fragen" });
+  }
+});
+
+// Abspeicherung neuer Fragen mit zugehöriger Session-ID und Student-Token in DB
+app.post("/api/questions", async (req, res) => {
+  try {
+    const { text, sessionId, studentToken, slideNumber, topic } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: "Text ist erforderlich" });
+    }
+
+    const newQuestion = await prisma.frage.create({
+      data: {
+        text,
+        sessionId: Number(sessionId || 1),
+        studentToken: studentToken || "anonymous",
+        folienNr: slideNumber ? Number(slideNumber) : null,
+        kapitel: topic || "Allgemein",
+        status: "NEU",
+      },
+      include: {
+        upvotes: true,
+        kommentare: true,
+      },
+    });
+
+    res.status(201).json({
+      id: newQuestion.id,
+      author: "Du (Teilnehmer)",
+      time: "Gerade eben",
+      text: newQuestion.text,
+      tag: newQuestion.kapitel || "",
+      topic: newQuestion.kapitel || "Allgemein",
+      slideNumber: newQuestion.folienNr,
+      comments: 0,
+      votes: 0,
+      voted: false,
+    });
+  } catch (err) {
+    console.error("Fehler beim Speichern der Frage:", err);
+    res.status(500).json({ error: "Fehler beim Speichern der Frage" });
+  }
+});
+
+// Endpunkt für Profilermittlung bei Fragen
+app.get("/api/profile", (req, res) => {
+  res.json({ anonym: false, name: "Du (Teilnehmer)" });
+});
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: FRONTEND_ORIGIN, credentials: true },
