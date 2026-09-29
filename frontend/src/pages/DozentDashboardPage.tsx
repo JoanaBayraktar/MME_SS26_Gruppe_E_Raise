@@ -1,10 +1,26 @@
-import { Folder, Plus } from "lucide-react";
+import { ArrowRight, Folder, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Card, DashboardLayout, EmptyState } from "../components/ui";
-import { ActiveSessionDto, DozentDto, getJson, isUnauthorized, VeranstaltungSummaryDto } from "../lib/api";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  DashboardLayout,
+  EmptyState,
+} from "../components/ui";
+import {
+  ActiveSessionDto,
+  DozentDto,
+  getJson,
+  isUnauthorized,
+  VeranstaltungSummaryDto,
+} from "../lib/api";
 import { DOZENT_NAV_ITEMS } from "../lib/dozentNav";
-import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../lib/sessionStatus";
+import {
+  SESSION_STATUS_LABEL,
+  SESSION_STATUS_TONE,
+} from "../lib/sessionStatus";
 import { ROUTES } from "../routes";
 
 type LoadState = "loading" | "loaded" | "error";
@@ -12,8 +28,12 @@ type LoadState = "loading" | "loaded" | "error";
 export default function DozentDashboardPage() {
   const navigate = useNavigate();
   const [dozent, setDozent] = useState<DozentDto | null>(null);
-  const [veranstaltungen, setVeranstaltungen] = useState<VeranstaltungSummaryDto[]>([]);
-  const [activeSession, setActiveSession] = useState<ActiveSessionDto | null>(null);
+  const [veranstaltungen, setVeranstaltungen] = useState<
+    VeranstaltungSummaryDto[]
+  >([]);
+  const [activeSession, setActiveSession] = useState<ActiveSessionDto | null>(
+    null,
+  );
   const [loadState, setLoadState] = useState<LoadState>("loading");
 
   useEffect(() => {
@@ -54,7 +74,9 @@ export default function DozentDashboardPage() {
         </Button>
       }
     >
-      {loadState === "error" && <Alert tone="error">Konnte Dashboard nicht laden.</Alert>}
+      {loadState === "error" && (
+        <Alert tone="error">Konnte Dashboard nicht laden.</Alert>
+      )}
 
       {loadState === "loaded" && veranstaltungen.length === 0 && (
         <Card>
@@ -79,10 +101,24 @@ export default function DozentDashboardPage() {
             </thead>
             <tbody>
               {veranstaltungen.map((veranstaltung) => (
-                <tr key={veranstaltung.id} className="border-t border-gray-100">
-                  <td className="px-4 py-3 font-semibold text-gray-900">{veranstaltung.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{veranstaltung.kuerzel}</td>
-                  <td className="px-4 py-3 text-gray-500">{veranstaltung.sessionCount} Sessions</td>
+                <tr
+                  key={veranstaltung.id}
+                  onClick={() =>
+                    navigate(
+                      `${ROUTES.DOZENT_SESSIONS}?veranstaltung=${veranstaltung.id}`,
+                    )
+                  }
+                  className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
+                >
+                  <td className="px-4 py-3 font-semibold text-gray-900">
+                    {veranstaltung.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {veranstaltung.kuerzel}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {veranstaltung.sessionCount} Sessions
+                  </td>
                   <td className="px-4 py-3">
                     <Badge tone={SESSION_STATUS_TONE[veranstaltung.status]}>
                       {SESSION_STATUS_LABEL[veranstaltung.status]}
@@ -97,11 +133,17 @@ export default function DozentDashboardPage() {
 
       {activeSession && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">Aktive Session</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">
+            Aktive Session
+          </h2>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-gray-900">{activeSession.name}</p>
-              <p className="text-sm text-gray-500">{activeSession.veranstaltungName}</p>
+              <p className="font-semibold text-gray-900">
+                {activeSession.name}
+              </p>
+              <p className="text-sm text-gray-500">
+                {activeSession.veranstaltungName}
+              </p>
             </div>
             <Badge tone="brand">{activeSession.code}</Badge>
           </Card>
