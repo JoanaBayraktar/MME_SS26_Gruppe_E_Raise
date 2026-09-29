@@ -74,13 +74,36 @@ veranstaltungenRouter.post("/", async (req, res) => {
   }
 
   const parsed = createVeranstaltungSchema.safeParse(req.body);
+
   if (!parsed.success) {
-    return res.status(400).json({ message: parsed.error.issues[0].message });
+    return res.status(400).json({
+      message: parsed.error.issues[0].message,
+    });
+  }
+
+  const bestehendeVeranstaltung = await prisma.veranstaltung.findFirst({
+    where: {
+      dozentId: req.session.dozentId,
+      kuerzel: parsed.data.kuerzel,
+    },
+  });
+
+  if (bestehendeVeranstaltung) {
+    return res.status(409).json({
+      message: "Dieses Kürzel wird bereits verwendet.",
+    });
   }
 
   const veranstaltung = await prisma.veranstaltung.create({
-    data: { ...parsed.data, dozentId: req.session.dozentId },
+    data: {
+      ...parsed.data,
+      dozentId: req.session.dozentId,
+    },
   });
 
-  res.status(201).json({ id: veranstaltung.id, name: veranstaltung.name, kuerzel: veranstaltung.kuerzel });
+  res.status(201).json({
+    id: veranstaltung.id,
+    name: veranstaltung.name,
+    kuerzel: veranstaltung.kuerzel,
+  });
 });
