@@ -3,12 +3,14 @@ import { prisma } from "./prisma";
 
 const router = Router();
 
-// abruf aller Fragen einer Session
+// ==========================================
+// 1. FRAGEN-ROUTEN
+// ==========================================
+
 router.get("/", async (req, res) => {
   try {
     const { sessionId, sortBy, studentToken } = req.query;
 
-    // abfrage aktueller session oder fallback zu default
     let session = await prisma.session.findFirst();
     if (sessionId && sessionId !== "0000") {
       const foundSession = await prisma.session.findFirst({
@@ -33,7 +35,6 @@ router.get("/", async (req, res) => {
           : { id: "desc" },
     });
 
-    // Datenaufbereitung für frontend
     const formatted = questions.map((q) => {
       const hasVoted = studentToken 
         ? q.upvotes.some((u) => u.studentToken === String(studentToken)) 
@@ -55,12 +56,11 @@ router.get("/", async (req, res) => {
 
     return res.json(formatted);
   } catch (error) {
-    console.error("Error fetching questions:", error);
+    console.error("Fehler beim Abrufen der Fragen:", error);
     return res.status(500).json({ error: "Fehler beim Laden der Fragen" });
   }
 });
 
-// neue Frage anlegen
 router.post("/", async (req, res) => {
   try {
     const { text, author, slideNumber, topic, sessionId, studentToken } = req.body;
@@ -110,12 +110,11 @@ router.post("/", async (req, res) => {
 
     return res.status(201).json(formatted);
   } catch (error) {
-    console.error("Error creating question:", error);
+    console.error("Fehler beim Erstellen der Frage:", error);
     return res.status(500).json({ error: "Fehler beim Erstellen der Frage" });
   }
 });
 
-// Upvote anlegen
 router.post("/:id/vote", async (req, res) => {
   try {
     const { id } = req.params;
@@ -126,7 +125,6 @@ router.post("/:id/vote", async (req, res) => {
       return res.status(400).json({ error: "StudentToken ist erforderlich." });
     }
 
-    // Prüfen, ob bereits ein Upvote von diesem Token existiert
     const existingUpvote = await prisma.upvote.findFirst({
       where: {
         frageId: questionId,
@@ -135,12 +133,10 @@ router.post("/:id/vote", async (req, res) => {
     });
 
     if (existingUpvote) {
-      // Wenn bereits gevotet -> Upvote löschen (Unvote)
       await prisma.upvote.delete({
         where: { id: existingUpvote.id },
       });
     } else {
-      // Ansonsten -> Upvote erstellen
       await prisma.upvote.create({
         data: {
           frageId: questionId,
@@ -149,7 +145,6 @@ router.post("/:id/vote", async (req, res) => {
       });
     }
 
-    // Aktualisierte Frage abrufen, um aktuelle Vote-Anzahl und Status zurückzugeben
     const updatedQuestion = await prisma.frage.findUnique({
       where: { id: questionId },
       include: { upvotes: true },
@@ -167,8 +162,85 @@ router.post("/:id/vote", async (req, res) => {
       voted: hasVoted,
     });
   } catch (error) {
-    console.error("Error toggling vote:", error);
+    console.error("Fehler beim Umschalten des Votes:", error);
     return res.status(500).json({ error: "Fehler beim Speichern des Votes" });
+  }
+});
+
+
+// ==========================================
+// 2. KOMMENTAR-ROUTEN
+// ==========================================
+
+// Alle Kommentare für eine spezifische Frage abrufen (ohne ungültiges include)
+router.get("/:id/comments", async (req, res) => {
+  try {
+    const questionId = Number(req.params.id);
+    const { studentToken } = req.query;
+
+    const kommentare = await prisma.kommentar.findMany({
+      where: { frageId: questionId },
+      orderBy: { erstelltAm: "asc" },
+    });
+
+    const formattedComments = kommentare.map((k) => {
+      return {
+        id: k.id,
+        frageId: k.frageId,
+        author: k.isDozent ? "Dozent" : "Anonymer Nutzer",
+        isMe: studentToken ? k.studentToken === String(studentToken) : false,
+        isDozent: k.isDozent,
+        time: new Date(k.erstelltAm).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: k.text,
+        votes: 0, // Vorerst 0, da Upvotes für Kommentare noch nicht in DB sind
+        voted: false,
+        erstelltAm: k.erstelltAm,
+      };
+    });
+
+    return res.json(formattedComments);
+  } catch (error) {
+    console.error("Fehler beim Laden der Kommentare:", error);
+    return res.status(500).json({ error: "Fehler beim Laden der Kommentare" });
+  }
+});
+
+// Neuen Kommentar erstellen
+router.post("/:id/comments", async (req, res) => {
+  try {
+    const questionId = Number(req.params.id);
+    const { text, studentToken, isDozent } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Kommentartext darf nicht leer sein." });
+    }
+
+    const newKommentar = await prisma.kommentar.create({
+      data: {
+        frageId: questionId,
+        text: text.trim(),
+        studentToken: studentToken || null,
+        isDozent: isDozent || false,
+      },
+    });
+
+    const formattedComment = {
+      id: newKommentar.id,
+      frageId: newKommentar.frageId,
+      author: newKommentar.isDozent ? "Dozent" : "Anonymer Nutzer",
+      isMe: true,
+      isDozent: newKommentar.isDozent,
+      time: new Date(newKommentar.erstelltAm).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: newKommentar.text,
+      votes: 0,
+      voted: false,
+      erstelltAm: newKommentar.erstelltAm,
+    };
+
+    return res.status(201).json(formattedComment);
+  } catch (error) {
+    console.error("Fehler beim Erstellen des Kommentars:", error);
+    return res.status(500).json({ error: "Fehler beim Erstellen des Kommentars" });
   }
 });
 

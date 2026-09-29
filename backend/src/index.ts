@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./prisma";
 import questionsRouter from "./questions";
+import commentsRouter from "./comments";
 
 // Environment Configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -34,6 +35,7 @@ app.use(
 
 // --- API ROUTES ---
 app.use("/api/questions", questionsRouter);
+app.use("/api/comments", commentsRouter);
 
 // Profile mock (prevents 404 errors from determineAuthorName in frontend)
 app.get("/api/profile", (_req, res) => {
