@@ -134,9 +134,10 @@ export default function DozentDashboardPage() {
       {activeSession && (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-gray-900">
-            Aktive Session
+            Aktuelle Session
           </h2>
-          <Card className="flex items-center justify-between">
+
+          <Card className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-gray-900">
                 {activeSession.name}
@@ -144,8 +145,22 @@ export default function DozentDashboardPage() {
               <p className="text-sm text-gray-500">
                 {activeSession.veranstaltungName}
               </p>
+
+              <div className="mt-2">
+                <Badge tone="brand">{activeSession.code}</Badge>
+              </div>
             </div>
-            <Badge tone="brand">{activeSession.code}</Badge>
+
+            <Button
+              variant="primary"
+              className="flex w-auto items-center gap-2 px-4"
+              onClick={() =>
+                navigate(`${ROUTES.DOZENT_SESSIONS}/${activeSession.id}`)
+              }
+            >
+              Aktuelle Session / Moderation
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </Card>
         </div>
       )}
