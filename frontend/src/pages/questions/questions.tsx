@@ -1,13 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-<<<<<<< Updated upstream
-import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown } from "lucide-react";
-// Import aus deiner neuen Service-Datei (Pfade anpassen, je nachdem wo der services-Ordner liegt)
-import { fetchQuestions, sendQuestion } from "../questions/questionsService";
-=======
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 // Import aus deiner Service-Datei (inklusive voteQuestion)
 import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion } from "../questions/questionsService";
->>>>>>> Stashed changes
 
 interface Question {
   id: number;
@@ -68,21 +62,12 @@ export default function Questions() {
       // Autor über separate Methode ermitteln (berücksichtigt Anonym-Status)
       const authorName = await determineAuthorName();
 
-<<<<<<< Updated upstream
-    const savedQuestion = await sendQuestion({
-      text,
-      author: authorName,
-      slideNumber: slideNumber ? Number(slideNumber) : undefined,
-      topic: selectedTopic || "Allgemein",
-    });
-=======
       const savedQuestion = await sendQuestion({
         text,
         author: authorName,
         slideNumber: slideNumber ? Number(slideNumber) : undefined,
         topic: selectedTopic || "Allgemein",
       });
->>>>>>> Stashed changes
 
       // UI aktualisieren mit der Antwort aus dem Backend (inkl. echter DB-ID)
       setQuestions((current) => [savedQuestion, ...current]);
@@ -312,12 +297,4 @@ export default function Questions() {
       </div>
     </div>
   );
-<<<<<<< Updated upstream
 }
-
-function determineAuthorName() {
-  throw new Error("Function not implemented.");
-}
-=======
-}
->>>>>>> Stashed changes

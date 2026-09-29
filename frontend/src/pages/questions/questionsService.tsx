@@ -1,11 +1,6 @@
 const API_URL = "http://localhost:4000/api/questions"; // Passe hier ggf. deinen Port an
 const PROFILE_API_URL = "http://localhost:4000/api/profile"; // Passe den Endpunkt an dein Backend an
 
-<<<<<<< Updated upstream
-// Alle Fragen vom Backend abrufen
-export async function fetchQuestions() {
-  const response = await fetch(API_URL);
-=======
 // Helper to get or create a persistent student token in browser storage
 function getStudentToken(): string {
   let token = localStorage.getItem("student_token");
@@ -26,7 +21,6 @@ export async function fetchQuestions(sessionId?: string | number, sortBy: "newes
   const activeSession = sessionId || getCurrentSessionId();
   const response = await fetch(`${API_URL}?sessionId=${activeSession}&sortBy=${sortBy}`);
   
->>>>>>> Stashed changes
   if (!response.ok) {
     throw new Error("Fehler beim Laden der Fragen aus dem Backend");
   }
@@ -39,10 +33,7 @@ export async function sendQuestion(questionData: {
   author?: string;
   slideNumber?: number;
   topic?: string;
-<<<<<<< Updated upstream
-=======
   sessionId?: string | number;
->>>>>>> Stashed changes
 }) {
   const activeSession = questionData.sessionId || getCurrentSessionId();
 
@@ -51,15 +42,11 @@ export async function sendQuestion(questionData: {
     headers: {
       "Content-Type": "application/json",
     },
-<<<<<<< Updated upstream
-    body: JSON.stringify(questionData),
-=======
     body: JSON.stringify({
       ...questionData,
       sessionId: activeSession,
       studentToken: getStudentToken(),
     }),
->>>>>>> Stashed changes
   });
 
   if (!response.ok) {
@@ -118,14 +105,6 @@ async function fetchUserProfile() {
       "Content-Type": "application/json",
     },
   });
-<<<<<<< Updated upstream
-
-  if (!response.ok) {
-    throw new Error("Fehler beim Laden des Benutzerprofils vom Server");
-  }
-
-=======
   if (!response.ok) return null; 
->>>>>>> Stashed changes
   return await response.json();
 }
