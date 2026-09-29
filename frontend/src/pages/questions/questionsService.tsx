@@ -93,12 +93,15 @@ export async function fetchComments(questionId: number) {
   return data || [];
 }
 
-// Neuen Kommentar für eine Frage senden
+// Neuen Kommentar für eine Frage senden (jetzt inklusive automatischer Autoren- / Anonym-Prüfung)
 export async function sendComment(questionId: number, text: string) {
+  const authorName = await determineAuthorName();
+
   return apiRequest<any>(`${API_URL}/${questionId}/comments`, {
     method: "POST",
     body: JSON.stringify({
       text,
+      author: authorName,
       studentToken: getStudentToken(),
     }),
   });
