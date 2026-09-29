@@ -55,41 +55,68 @@ router.get("/", async (req, res) => {
 });
 
 // POST /api/questions - Create a new question
-router.post("/", async (req, res) => {
+// POST /api/questions/:id/vote - Toggle vote for a specific question
+router.post("/:id/vote", async (req, res) => {
   try {
-    const { text, slideNumber, topic, studentToken } = req.body;
+    const questionId = Number(req.params.id);
+    const { studentToken } = req.body;
 
-    // Get active session
-    const session = await prisma.session.findFirst();
-    if (!session) {
-      return res.status(400).json({ error: "Keine aktive Session gefunden" });
+    if (!studentToken) {
+      return res.status(400).json({ error: "Student token is required" });
     }
 
-    const newFrage = await prisma.frage.create({
-      data: {
-        text,
-        folienNr: slideNumber ? Number(slideNumber) : null,
-        kapitel: topic || null,
-        sessionId: session.id,
-        studentToken: studentToken || "default-token",
+    // Check if the question exists
+    const question = await prisma.frage.findUnique({
+      where: { id: questionId },
+      include: { upvotes: true },
+    });
+
+    if (!question) {
+      return res.status(404).json({ error: "Frage nicht gefunden" });
+    }
+
+    // Check if this student has already voted for this question
+    // (Note: Adjust "frageId" and "studentToken" field names if your Prisma schema differs)
+    const existingVote = await prisma.upvote.findFirst({
+      where: {
+        frageId: questionId,
+        studentToken: studentToken,
       },
     });
 
+    let voted = false;
+
+    if (existingVote) {
+      // If already voted, remove the vote (toggle off)
+      await prisma.upvote.delete({
+        where: { id: existingVote.id },
+      });
+      voted = false;
+    } else {
+      // Otherwise, create a new vote (toggle on)
+      await prisma.upvote.create({
+        data: {
+          frageId: questionId,
+          studentToken: studentToken,
+        },
+      });
+      voted = true;
+    }
+
+    // Fetch the updated count of upvotes
+    const updatedQuestion = await prisma.frage.findUnique({
+      where: { id: questionId },
+      include: { upvotes: true },
+    });
+
     res.json({
-      id: newFrage.id,
-      text: newFrage.text,
-      author: "Du (Teilnehmer)",
-      time: "Gerade eben",
-      tag: newFrage.kapitel ? `${newFrage.kapitel}` : "",
-      topic: newFrage.kapitel || "Allgemein",
-      slideNumber: newFrage.folienNr || undefined,
-      comments: 0,
-      votes: 0,
-      voted: false,
+      id: questionId,
+      votes: updatedQuestion?.upvotes.length || 0,
+      voted: voted,
     });
   } catch (error) {
-    console.error("Error creating question:", error);
-    res.status(500).json({ error: "Fehler beim Erstellen der Frage" });
+    console.error("Error handling vote:", error);
+    res.status(500).json({ error: "Fehler beim Verarbeiten des Votes" });
   }
 });
 

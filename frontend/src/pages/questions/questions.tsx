@@ -83,39 +83,57 @@ export default function Questions() {
     }
   };
 
-  // Upvote-Logik mit Backend-Anbindung und optimistischem UI-Update
+  // Vote-Handler mit Optimistic Updates und automatischem Rollback
   const handleVote = async (questionId: number) => {
-    // 1. UI sofort aktualisieren für ein flüssiges Nutzererlebnis
+    const targetQuestion = questions.find((q) => q.id === questionId);
+    if (!targetQuestion) return;
+
+    const newVotedState = !targetQuestion.voted;
+
+    // 1. UI sofort aktualisieren (Optimistic Update)
     setQuestions((current) =>
-      current.map((q) =>
-        q.id === questionId
+      current.map((question) =>
+        question.id === questionId
           ? {
-              ...q,
-              votes: q.voted ? q.votes - 1 : q.votes + 1,
-              voted: !q.voted,
+              ...question,
+              votes: newVotedState ? question.votes + 1 : question.votes - 1,
+              voted: newVotedState,
             }
-          : q
-      )
+          : question,
+      ),
     );
 
+    // 2. Backend-Service aufrufen
     try {
-      // 2. Anforderung an das Backend senden
-      await voteQuestion(questionId);
-    } catch (error) {
-      console.error("Fehler beim Speichern des Votes:", error);
+      const updatedQuestion = await voteQuestion(questionId);
 
-      // 3. Bei einem Fehler den Zustand im UI wieder zurücksetzen (Rollback)
+      // Falls das Backend die genaue Antwort zurückliefert, synchronisieren
+      if (updatedQuestion && typeof updatedQuestion.votes === "number") {
+        setQuestions((current) =>
+          current.map((question) =>
+            question.id === questionId
+              ? { ...question, votes: updatedQuestion.votes, voted: updatedQuestion.voted }
+              : question,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Fehler beim Voten im Backend:", error);
+
+      // 3. Bei Fehler Änderungen im UI rückgängig machen (Rollback)
       setQuestions((current) =>
-        current.map((q) =>
-          q.id === questionId
+        current.map((question) =>
+          question.id === questionId
             ? {
-                ...q,
-                votes: q.voted ? q.votes + 1 : q.votes - 1,
-                voted: !q.voted,
+                ...question,
+                votes: targetQuestion.votes,
+                voted: targetQuestion.voted,
               }
-            : q
-        )
+            : question,
+        ),
       );
+
+      alert("Dein Vote konnte nicht gespeichert werden.");
     }
   };
 
