@@ -217,17 +217,20 @@ export default function Questions() {
             </div>
 
             <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
-              <button
-                type="button"
-                onClick={() => handleVote(question.id)}
-                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                  question.voted ? "bg-pink-600 text-white" : "text-gray-500 hover:bg-pink-50 hover:text-pink-600"
-                }`}
-              >
-                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-              </button>
-              <span className="text-xs font-bold text-gray-800">{question.votes}</span>
-            </div>
+              <button 
+              type="button"
+              onClick={() => handleVote(question.id)}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                question.voted 
+                ? "bg-pink-600 text-white border border-pink-600" 
+                : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                
+              }`}
+  >
+    <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+  </button>
+  <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+</div>
           </div>
         ))}
       </div>
