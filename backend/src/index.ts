@@ -21,7 +21,7 @@ app.use(
   })
 );
 
-// simple healthcheck, prueft auch die DB-Verbindung
+// Simple healthcheck, prüft auch die DB-Verbindung
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;

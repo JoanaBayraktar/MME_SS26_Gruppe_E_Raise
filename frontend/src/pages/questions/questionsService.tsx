@@ -1,9 +1,32 @@
 const API_URL = "http://localhost:4000/api/questions"; // Passe hier ggf. deinen Port an
 const PROFILE_API_URL = "http://localhost:4000/api/profile"; // Passe den Endpunkt an dein Backend an
 
+<<<<<<< Updated upstream
 // Alle Fragen vom Backend abrufen
 export async function fetchQuestions() {
   const response = await fetch(API_URL);
+=======
+// Helper to get or create a persistent student token in browser storage
+function getStudentToken(): string {
+  let token = localStorage.getItem("student_token");
+  if (!token) {
+    token = "token_" + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("student_token", token);
+  }
+  return token;
+}
+
+// Helper to get the current active session ID (overwritten later, defaults to "0000" for dev)
+function getCurrentSessionId(): string | number {
+  return localStorage.getItem("current_session_id") || "0000";
+}
+
+// Alle Fragen für eine bestimmte Session abrufen (inkl. optionaler Sortierung)
+export async function fetchQuestions(sessionId?: string | number, sortBy: "newest" | "votes" = "newest") {
+  const activeSession = sessionId || getCurrentSessionId();
+  const response = await fetch(`${API_URL}?sessionId=${activeSession}&sortBy=${sortBy}`);
+  
+>>>>>>> Stashed changes
   if (!response.ok) {
     throw new Error("Fehler beim Laden der Fragen aus dem Backend");
   }
@@ -16,13 +39,27 @@ export async function sendQuestion(questionData: {
   author?: string;
   slideNumber?: number;
   topic?: string;
+<<<<<<< Updated upstream
+=======
+  sessionId?: string | number;
+>>>>>>> Stashed changes
 }) {
+  const activeSession = questionData.sessionId || getCurrentSessionId();
+
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
+<<<<<<< Updated upstream
     body: JSON.stringify(questionData),
+=======
+    body: JSON.stringify({
+      ...questionData,
+      sessionId: activeSession,
+      studentToken: getStudentToken(),
+    }),
+>>>>>>> Stashed changes
   });
 
   if (!response.ok) {
@@ -30,6 +67,30 @@ export async function sendQuestion(questionData: {
   }
 
   return await response.json();
+}
+
+// Vote für eine spezifische Frage abgeben / umschalten
+export async function voteQuestion(questionId: number) {
+  const response = await fetch(`${API_URL}/${questionId}/vote`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      studentToken: getStudentToken(),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Fehler beim Speichern des Votes im Backend");
+  }
+
+  // Optional: falls dein Backend die aktualisierte Frage zurückgibt
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 // Methode ermittelt Author für Frage oder legt anonymen Namen fest
@@ -57,10 +118,14 @@ async function fetchUserProfile() {
       "Content-Type": "application/json",
     },
   });
+<<<<<<< Updated upstream
 
   if (!response.ok) {
     throw new Error("Fehler beim Laden des Benutzerprofils vom Server");
   }
 
+=======
+  if (!response.ok) return null; 
+>>>>>>> Stashed changes
   return await response.json();
 }
