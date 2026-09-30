@@ -210,9 +210,53 @@ sessionsRouter.get("/:id", async (req, res) => {
     name: session.name,
     code: session.code,
     status: computeSessionStatus(session),
+    autoStart: session.autoStart,
     datum: session.datum,
     startZeit: session.startZeit,
     endZeit: session.endZeit,
     veranstaltungName: session.veranstaltung.name,
   });
+});
+
+const updateSessionStatusSchema = z.object({
+  status: z.enum(["LAUFEND", "BEENDET"]),
+});
+
+// Nur für Sessions mit manuellem Start (autoStart=false) relevant – bei
+// autoStart=true ergibt sich der Status ja automatisch aus den Zeiten
+// (siehe computeSessionStatus) und lässt sich nicht manuell überschreiben.
+sessionsRouter.patch("/:id/status", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(404).json({ message: "Diese Session existiert nicht." });
+  }
+
+  const parsed = updateSessionStatusSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: parsed.error.issues[0].message });
+  }
+
+  const session = await prisma.session.findFirst({
+    where: { id, veranstaltung: { dozentId: req.session.dozentId } },
+  });
+  if (!session) {
+    return res.status(404).json({ message: "Diese Session existiert nicht." });
+  }
+  if (session.autoStart) {
+    return res.status(400).json({ message: "Diese Session startet automatisch und kann nicht manuell gesteuert werden." });
+  }
+
+  const { status } = parsed.data;
+  const validTransition =
+    (session.status === "GEPLANT" && status === "LAUFEND") || (session.status === "LAUFEND" && status === "BEENDET");
+  if (!validTransition) {
+    return res.status(400).json({ message: "Dieser Status-Wechsel ist nicht möglich." });
+  }
+
+  const updated = await prisma.session.update({ where: { id }, data: { status } });
+  res.json({ id: updated.id, status: updated.status });
 });

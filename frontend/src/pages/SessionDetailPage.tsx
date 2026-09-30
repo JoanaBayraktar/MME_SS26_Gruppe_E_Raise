@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Badge, Modal } from "../components/ui";
-import { ApiError, getJson, isUnauthorized, SessionDetailDto } from "../lib/api";
+import { Alert, Badge, Button, Modal } from "../components/ui";
+import { ApiError, getJson, isUnauthorized, patchJson, SessionDetailDto } from "../lib/api";
 import { formatDatum, formatUhrzeit } from "../lib/formatDate";
 import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../lib/sessionStatus";
 import { ROUTES } from "../routes";
@@ -13,6 +13,8 @@ export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [session, setSession] = useState<SessionDetailDto | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   useEffect(() => {
     getJson<SessionDetailDto>(`/api/sessions/${sessionId}`)
@@ -28,6 +30,23 @@ export default function SessionDetailPage() {
         setLoadState(err instanceof ApiError && err.status === 404 ? "not-found" : "error");
       });
   }, [navigate, sessionId]);
+
+  const changeStatus = async (status: "LAUFEND" | "BEENDET") => {
+    if (!session) return;
+    setStatusError(null);
+    setIsChangingStatus(true);
+    try {
+      const updated = await patchJson<{ id: number; status: "GEPLANT" | "LAUFEND" | "BEENDET" }>(
+        `/api/sessions/${session.id}/status`,
+        { status }
+      );
+      setSession({ ...session, status: updated.status });
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.message : "Status konnte nicht geändert werden.");
+    } finally {
+      setIsChangingStatus(false);
+    }
+  };
 
   return (
     <Modal className="max-w-lg p-8" onClose={() => navigate(ROUTES.DOZENT_SESSIONS)}>
@@ -68,6 +87,25 @@ export default function SessionDetailPage() {
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Beitritts-Code</p>
                 <p className="mt-1 text-2xl font-bold tracking-widest text-brand">{session.code}</p>
               </div>
+
+              {statusError && <Alert tone="error">{statusError}</Alert>}
+
+              {!session.autoStart && session.status === "GEPLANT" && (
+                <Button className="w-auto px-4" disabled={isChangingStatus} onClick={() => changeStatus("LAUFEND")}>
+                  {isChangingStatus ? "Wird gestartet..." : "Jetzt starten"}
+                </Button>
+              )}
+
+              {!session.autoStart && session.status === "LAUFEND" && (
+                <Button
+                  variant="outline"
+                  className="w-auto px-4"
+                  disabled={isChangingStatus}
+                  onClick={() => changeStatus("BEENDET")}
+                >
+                  {isChangingStatus ? "Wird beendet..." : "Beenden"}
+                </Button>
+              )}
 
               <p className="text-sm text-gray-500">Live-Ansicht mit Fragen &amp; Umfragen folgt in Issue #16.</p>
             </div>

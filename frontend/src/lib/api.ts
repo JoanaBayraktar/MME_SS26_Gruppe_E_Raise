@@ -39,6 +39,7 @@ export interface SessionDetailDto {
   name: string;
   code: string;
   status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  autoStart: boolean;
   datum: string;
   startZeit: string;
   endZeit: string | null;

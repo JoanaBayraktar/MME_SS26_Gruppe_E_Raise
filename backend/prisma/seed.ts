@@ -19,20 +19,28 @@ async function main() {
 
   console.log(`Created dozent: ${dozent.vorname} ${dozent.nachname}`)
 
-  // 2. Create a Veranstaltung (Course)
-  const veranstaltung = await prisma.veranstaltung.create({
-    data: {
-      dozentId: dozent.id,
-      name: 'Software Engineering I',
-      kuerzel: 'SE1',
-    },
+  // 2. Create a Veranstaltung (Course) – kein Unique-Feld außer id, deshalb
+  // per findFirst prüfen statt upsert, damit erneutes Seeden sie nicht dupliziert.
+  let veranstaltung = await prisma.veranstaltung.findFirst({
+    where: { dozentId: dozent.id, name: 'Software Engineering I' },
   })
+  if (!veranstaltung) {
+    veranstaltung = await prisma.veranstaltung.create({
+      data: {
+        dozentId: dozent.id,
+        name: 'Software Engineering I',
+        kuerzel: 'SE1',
+      },
+    })
+  }
 
   console.log(`Created veranstaltung: ${veranstaltung.name}`)
 
   // 3. Create a Session
-  const session = await prisma.session.create({
-    data: {
+  const session = await prisma.session.upsert({
+    where: { code: 'SE1-01' },
+    update: {},
+    create: {
       veranstaltungId: veranstaltung.id,
       name: 'Einführung in Architekturmuster',
       datum: new Date(),
@@ -47,22 +55,25 @@ async function main() {
   console.log(`Created session: ${session.name}`)
 
   // 4. Create a Live-Umfrage (Poll) with options
-  const umfrage = await prisma.umfrage.create({
-    data: {
-      sessionId: session.id,
-      frageText: 'Welches Architekturmuster bevorzugen Sie für Microservices?',
-      status: UmfrageStatus.AKTIV,
-      antwortoptionen: {
-        create: [
-          { text: 'Event-Driven Architecture' },
-          { text: 'Layered Architecture' },
-          { text: 'Microkernel Architecture' },
-        ],
+  const existingUmfrage = await prisma.umfrage.findFirst({ where: { sessionId: session.id } })
+  if (!existingUmfrage) {
+    const umfrage = await prisma.umfrage.create({
+      data: {
+        sessionId: session.id,
+        frageText: 'Welches Architekturmuster bevorzugen Sie für Microservices?',
+        status: UmfrageStatus.AKTIV,
+        antwortoptionen: {
+          create: [
+            { text: 'Event-Driven Architecture' },
+            { text: 'Layered Architecture' },
+            { text: 'Microkernel Architecture' },
+          ],
+        },
       },
-    },
-  })
+    })
+    console.log(`Created poll for session ID: ${umfrage.sessionId}`)
+  }
 
-  console.log(`Created poll for session ID: ${umfrage.sessionId}`)
   console.log('🌱 Seeding finished successfully!')
 }
 
