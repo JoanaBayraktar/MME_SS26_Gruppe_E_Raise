@@ -68,7 +68,13 @@ export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
         const matchFrage = e.frageText?.toLowerCase().includes(query);
         const matchAntwort = e.antwortText?.toLowerCase().includes(query);
         const matchKapitel = e.kapitel?.toLowerCase().includes(query);
-        return matchFrage || matchAntwort || matchKapitel;
+        
+        // Safety check if a separate tags array exists on the DTO
+        const matchTags = Array.isArray((e as any).tags)
+          ? (e as any).tags.some((tag: string) => tag.toLowerCase().includes(query))
+          : false;
+
+        return matchFrage || matchAntwort || matchKapitel || matchTags;
       });
     }
 
