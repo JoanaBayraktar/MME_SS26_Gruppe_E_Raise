@@ -207,8 +207,6 @@ sessionsRouter.get("/:id", async (req, res) => {
   });
 });
 
-
-
 sessionsRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
     return res
