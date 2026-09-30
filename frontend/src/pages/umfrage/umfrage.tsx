@@ -150,6 +150,13 @@ export default function Umfrage() {
     return () => clearInterval(interval);
   }, [loadUmfrage]);
 
+  // setzt die auswahl zurück wenn eine neue umfrage aktiv wird
+  useEffect(() => {
+    setSelectedOptionIds([]);
+    setHasVoted(false);
+    setVoteMessage(null);
+  }, [umfrage?.id]);
+
   if (isLoading) {
     return (
       <div className="rounded-2xl bg-white p-6 text-center text-sm text-gray-500">
@@ -205,9 +212,6 @@ export default function Umfrage() {
       className="rounded-2xl bg-white p-6"
     >
       <p className="text-sm font-medium text-pink-600">Aktive Umfrage</p>
-      <h2 className="mt-2 text-lg font-bold text-gray-900">
-        {umfrage.frageText}
-      </h2>
       <h2 className="mt-2 text-lg font-bold text-gray-900">
         {umfrage.frageText}
       </h2>
