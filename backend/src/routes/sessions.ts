@@ -73,13 +73,19 @@ sessionsRouter.get("/code", async (req, res) => {
 
 sessionsRouter.get("/by-code/:code", async (req, res) => {
   const code = req.params.code.trim().toUpperCase();
-  const session = await prisma.session.findUnique({ where: { code } });
+  const session = await prisma.session.findUnique({ where: { code }, include: { veranstaltung: true } });
 
   if (!session || computeSessionStatus(session) === "BEENDET") {
     return res.status(404).json({ message: "Diese Session existiert nicht oder ist beendet." });
   }
 
-  res.json({ id: session.id, name: session.name, status: computeSessionStatus(session) });
+  res.json({
+    id: session.id,
+    name: session.name,
+    code: session.code,
+    status: computeSessionStatus(session),
+    veranstaltungName: session.veranstaltung.name,
+  });
 });
 
 sessionsRouter.get("/", async (req, res) => {
