@@ -133,6 +133,40 @@ sessionsRouter.get("/", async (req, res) => {
   );
 });
 
+sessionsRouter.get("/active", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const candidates = await prisma.session.findMany({
+    where: {
+      veranstaltung: {
+        OR: [
+          { dozentId: req.session.dozentId },
+          { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+        ],
+      },
+      OR: [{ autoStart: true }, { status: "LAUFEND" }],
+    },
+    include: { veranstaltung: true },
+  });
+  const session = candidates.find((s) => computeSessionStatus(s) === "LAUFEND");
+
+  if (!session) {
+    return res.json(null);
+  }
+
+  res.json({
+    id: session.id,
+    name: session.name,
+    code: session.code,
+    startZeit: session.startZeit,
+    veranstaltungName: session.veranstaltung.name,
+  });
+});
+
 sessionsRouter.get("/:id", async (req, res) => {
   if (!req.session.dozentId) {
     return res
@@ -173,39 +207,7 @@ sessionsRouter.get("/:id", async (req, res) => {
   });
 });
 
-sessionsRouter.get("/active", async (req, res) => {
-  if (!req.session.dozentId) {
-    return res
-      .status(401)
-      .json({ message: "Bitte melde dich als Dozent:in an." });
-  }
 
-  const candidates = await prisma.session.findMany({
-    where: {
-      veranstaltung: {
-        OR: [
-          { dozentId: req.session.dozentId },
-          { mitDozenten: { some: { dozentId: req.session.dozentId } } },
-        ],
-      },
-      OR: [{ autoStart: true }, { status: "LAUFEND" }],
-    },
-    include: { veranstaltung: true },
-  });
-  const session = candidates.find((s) => computeSessionStatus(s) === "LAUFEND");
-
-  if (!session) {
-    return res.json(null);
-  }
-
-  res.json({
-    id: session.id,
-    name: session.name,
-    code: session.code,
-    startZeit: session.startZeit,
-    veranstaltungName: session.veranstaltung.name,
-  });
-});
 
 sessionsRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
