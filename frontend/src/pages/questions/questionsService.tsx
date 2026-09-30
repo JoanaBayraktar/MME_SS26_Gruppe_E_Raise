@@ -83,6 +83,42 @@ export async function voteQuestion(questionId: number) {
   });
 }
 
+// ==========================================
+// Kommentar-Funktionen für SingleView
+// ==========================================
+
+// Kommentare für eine bestimmte Frage abrufen
+export async function fetchComments(questionId: number) {
+  const data = await apiRequest<any[]>(`${API_URL}/${questionId}/comments`);
+  return data || [];
+}
+
+// Neuen Kommentar für eine Frage senden (jetzt inklusive automatischer Autoren- / Anonym-Prüfung)
+export async function sendComment(questionId: number, text: string) {
+  const authorName = await determineAuthorName();
+
+  return apiRequest<any>(`${API_URL}/${questionId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({
+      text,
+      author: authorName,
+      studentToken: getStudentToken(),
+    }),
+  });
+}
+
+// Vote für einen spezifischen Kommentar umschalten
+export async function voteComment(commentId: number) {
+  return apiRequest<any>(`${BASE_URL}/comments/${commentId}/vote`, {
+    method: "POST",
+    body: JSON.stringify({
+      studentToken: getStudentToken(),
+    }),
+  });
+}
+
+// ==========================================
+
 // Backend-Aufruf von Profil
 async function fetchUserProfile() {
   try {
@@ -95,11 +131,11 @@ async function fetchUserProfile() {
 // Methode ermittelt Author für Frage oder legt anonymen Namen fest
 export async function determineAuthorName(): Promise<string> {
   try {
-    const profile = await fetchUserProfile();
-    if (profile?.anonym === true) {
+    const profileData = await fetchUserProfile();
+    if (profileData?.anonym === true) {
       return "Anonym";
     }
-    return profile?.name || "Du (Teilnehmer)";
+    return profileData?.name || "Du (Teilnehmer)";
   } catch (error) {
     console.error("Fehler beim Abrufen des Profil-Status:", error);
     return "Du (Teilnehmer)";

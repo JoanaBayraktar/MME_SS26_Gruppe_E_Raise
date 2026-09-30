@@ -1,4 +1,4 @@
-import { PrismaClient, SessionStatus, UmfrageStatus, FrageStatus } from '@prisma/client'
+import { PrismaClient, SessionStatus, UmfrageStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -63,19 +63,6 @@ async function main() {
   })
 
   console.log(`Created poll for session ID: ${umfrage.sessionId}`)
-
-  // 5. Create a student question
-  await prisma.frage.create({
-    data: {
-      sessionId: session.id,
-      text: 'Wann nutzen wir am besten CQRS?',
-      kapitel: 'Kapitel 3',
-      folienNr: 12,
-      status: FrageStatus.NEU,
-      studentToken: 'sample-student-token-123',
-    },
-  })
-
   console.log('🌱 Seeding finished successfully!')
 }
 

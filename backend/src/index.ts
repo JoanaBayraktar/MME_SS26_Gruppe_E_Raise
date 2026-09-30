@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./prisma";
 import questionsRouter from "./questions";
+import commentsRouter from "./comments";
 import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
 import { veranstaltungenRouter } from "./routes/veranstaltungen";
@@ -35,18 +36,23 @@ app.use(
   })
 );
 
+app.use("/api/auth", authRouter);
+app.use("/api/sessions", sessionsRouter);
+app.use("/api/veranstaltungen", veranstaltungenRouter);
+
 // --- API ROUTES ---
 app.use("/api/questions", questionsRouter);
+app.use("/api/comments", commentsRouter);
 
 // Profile mock (prevents 404 errors from determineAuthorName in frontend)
 app.get("/api/profile", (_req, res) => {
   res.json({ name: "Teilnehmer", anonym: false });
 });
+
+// simple healthcheck, prueft auch die DB-Verbindung
 app.use("/api/auth", authRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/veranstaltungen", veranstaltungenRouter);
-
-// simple healthcheck, prueft auch die DB-Verbindung
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;

@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 // Import aus deiner Service-Datei (inklusive voteQuestion)
 import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion } from "../questions/questionsService";
+// Import der neuen SingleView-Komponente für die Detailansicht
+import { SingleView } from "./singleview";
 
 interface Question {
   id: number;
@@ -28,6 +30,9 @@ export default function Questions() {
   // State für die Sortierung ("newest" oder "votes") und das Dropdown
   const [sortBy, setSortBy] = useState<"newest" | "votes">("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
+
+  // State für die ausgewählte Frage in der Detailansicht (SingleView)
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   
   const slideBoxRef = useRef<HTMLDivElement>(null);
   const topicBoxRef = useRef<HTMLDivElement>(null);
@@ -84,7 +89,9 @@ export default function Questions() {
   };
 
   // Vote-Handler mit Optimistic Updates und automatischem Rollback
-  const handleVote = async (questionId: number) => {
+  const handleVote = async (questionId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation(); // Verhindert, dass sich beim Voten die Detailansicht öffnet
+
     const targetQuestion = questions.find((q) => q.id === questionId);
     if (!targetQuestion) return;
 
@@ -197,7 +204,11 @@ export default function Questions() {
       {/* Fragen-Liste */}
       <div className="flex-1 space-y-4 mb-6">
         {sortedQuestions.map((question) => (
-          <div key={question.id} className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+          <div 
+            key={question.id} 
+            onClick={() => setSelectedQuestion(question)}
+            className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
+          >
             <div className="flex-1">
               <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
                 <span className="font-semibold text-gray-800">{question.author}</span>
@@ -218,19 +229,18 @@ export default function Questions() {
 
             <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
               <button 
-              type="button"
-              onClick={() => handleVote(question.id)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                question.voted 
-                ? "bg-pink-600 text-white border border-pink-600" 
-                : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
-                
-              }`}
-  >
-    <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-  </button>
-  <span className="text-xs font-bold text-gray-800">{question.votes}</span>
-</div>
+                type="button"
+                onClick={(e) => handleVote(question.id, e)}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  question.voted 
+                  ? "bg-pink-600 text-white border border-pink-600" 
+                  : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                }`}
+              >
+                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+              <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -316,6 +326,14 @@ export default function Questions() {
           </form>
         </div>
       </div>
+
+      {/* Detailansicht (SingleView) als Bottom-Sheet, wenn eine Frage ausgewählt ist */}
+      {selectedQuestion && (
+        <SingleView 
+          question={selectedQuestion} 
+          onClose={() => setSelectedQuestion(null)} 
+        />
+      )}
     </div>
   );
 }
