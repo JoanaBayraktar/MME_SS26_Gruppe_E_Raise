@@ -42,6 +42,7 @@ model Session {
   startZeit       DateTime      @map("start_zeit")
   endZeit         DateTime?     @map("end_zeit")
   status          SessionStatus @default(GEPLANT)
+  autoStart       Boolean       @default(true) @map("auto_start")
   qrCode          String        @unique @map("qr_code")
   code            String        @unique
   wiederholend    Boolean       @default(false)

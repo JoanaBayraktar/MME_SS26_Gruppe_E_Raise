@@ -5,6 +5,9 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./prisma";
 import questionsRouter from "./questions";
+import { authRouter } from "./routes/auth";
+import { sessionsRouter } from "./routes/sessions";
+import { veranstaltungenRouter } from "./routes/veranstaltungen";
 
 // Environment Configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -39,8 +42,11 @@ app.use("/api/questions", questionsRouter);
 app.get("/api/profile", (_req, res) => {
   res.json({ name: "Teilnehmer", anonym: false });
 });
+app.use("/api/auth", authRouter);
+app.use("/api/sessions", sessionsRouter);
+app.use("/api/veranstaltungen", veranstaltungenRouter);
 
-// Health check endpoint (checks DB connectivity)
+// simple healthcheck, prueft auch die DB-Verbindung
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
