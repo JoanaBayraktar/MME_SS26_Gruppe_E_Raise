@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { SlidersHorizontal, ArrowUpDown, Calendar, BookOpen, ChevronRight, X } from "lucide-react";
+import { SlidersHorizontal, ArrowUpDown, Calendar, BookOpen, ChevronRight, X, Search, Filter } from "lucide-react";
 // Import your actual fetch function returning ArchivedEntryDto[]
 import { fetchArchivedEntries, ArchivedEntryDto } from "./archivService";
 
@@ -11,11 +11,17 @@ export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
   const [entries, setEntries] = useState<ArchivedEntryDto[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // States for filters and sorting based on schema fields
+  // States for top filters and sorting
   const [selectedKapitel, setSelectedKapitel] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  // States for the bottom search bar & topic filter
+  const [searchQueryInput, setSearchQueryInput] = useState<string>("");
+  const [searchTopicInput, setSearchTopicInput] = useState<string>("");
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState<string>("");
+  const [appliedSearchTopic, setAppliedSearchTopic] = useState<string>("");
 
   useEffect(() => {
     let isMounted = true;
@@ -45,9 +51,25 @@ export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
   const filteredAndSortedEntries = useMemo(() => {
     let result = [...entries];
 
-    // Filter by chapter if selected
+    // Filter by top chapter filter if selected
     if (selectedKapitel !== "all") {
       result = result.filter((e) => e.kapitel?.toLowerCase() === selectedKapitel.toLowerCase());
+    }
+
+    // Filter by bottom search topic dropdown if selected
+    if (searchTopicInput) {
+      result = result.filter((e) => e.kapitel?.toLowerCase() === searchTopicInput.toLowerCase());
+    }
+
+    // Filter by applied search query (Fragetexte, Kommentare/Antworten, Themen-Tags)
+    if (appliedSearchQuery.trim()) {
+      const query = appliedSearchQuery.toLowerCase().trim();
+      result = result.filter((e) => {
+        const matchFrage = e.frageText?.toLowerCase().includes(query);
+        const matchAntwort = e.antwortText?.toLowerCase().includes(query);
+        const matchKapitel = e.kapitel?.toLowerCase().includes(query);
+        return matchFrage || matchAntwort || matchKapitel;
+      });
     }
 
     // Chronological sorting based on 'erstelltAm'
@@ -63,12 +85,24 @@ export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
     });
 
     return result;
-  }, [entries, selectedKapitel, sortOrder]);
+  }, [entries, selectedKapitel, searchTopicInput, appliedSearchQuery, sortOrder]);
 
   const handleCardClick = (veranstaltungId: number) => {
     if (onSelectVeranstaltung) {
       onSelectVeranstaltung(veranstaltungId);
     }
+  };
+
+  const handleSearchClick = () => {
+    setAppliedSearchQuery(searchQueryInput);
+    setAppliedSearchTopic(searchTopicInput);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQueryInput("");
+    setSearchTopicInput("");
+    setAppliedSearchQuery("");
+    setAppliedSearchTopic("");
   };
 
   return (
@@ -235,6 +269,83 @@ export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
           ))}
         </div>
       )}
+
+      {/* Integrated Search and Topic Filter Bar at the Bottom */}
+      <div className="mt-8 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-3 items-center">
+          
+          {/* Suchleiste mit Eingabefeld */}
+          <div className="relative flex-1 w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              value={searchQueryInput}
+              onChange={(e) => setSearchQueryInput(e.target.value)}
+              placeholder="Fragetexte, Kommentare oder Tags durchsuchen..."
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+            />
+            {searchQueryInput && (
+              <button
+                onClick={() => setSearchQueryInput("")}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Themen-Auswahl (Dropdown) */}
+          <div className="relative w-full md:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Filter className="w-4 h-4" />
+            </div>
+            <select
+              value={searchTopicInput}
+              onChange={(e) => setSearchTopicInput(e.target.value)}
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 appearance-none transition-all cursor-pointer"
+            >
+              <option value="">Alle Themen</option>
+              {chapters.map((kap) => (
+                <option key={kap} value={kap}>
+                  {kap}
+                </option>
+              ))}
+            </select>
+            {/* Dropdown Arrow */}
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Expliziter "Suchen"-Button */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={handleSearchClick}
+              className="flex-1 md:flex-none px-5 py-2.5 bg-pink-600 hover:bg-pink-700 active:bg-pink-800 text-white font-medium text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Search className="w-4 h-4" />
+              <span>Suchen</span>
+            </button>
+
+            {(appliedSearchQuery || appliedSearchTopic || searchQueryInput || searchTopicInput) && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="px-3 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl text-sm transition-colors cursor-pointer"
+                title="Filter zurücksetzen"
+              >
+                Zurücksetzen
+              </button>
+            )}
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
