@@ -9,6 +9,7 @@ import commentsRouter from "./comments";
 import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
 import { veranstaltungenRouter } from "./routes/veranstaltungen";
+import { umfragenRouter } from "./routes/umfragen";
 
 // Environment Configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -39,6 +40,7 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/veranstaltungen", veranstaltungenRouter);
+app.use("/api/umfragen", umfragenRouter);
 
 // --- API ROUTES ---
 app.use("/api/questions", questionsRouter);

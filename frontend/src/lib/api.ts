@@ -36,6 +36,16 @@ export interface SessionByCodeDto {
   veranstaltungName: string;
 }
 
+export interface ActiveUmfrageDto {
+  id: number;
+  frageText: string;
+  status: "AKTIV";
+  antwortoptionen: {
+    id: number;
+    text: string;
+  }[];
+}
+
 export interface SessionSummaryDto {
   id: number;
   name: string;
