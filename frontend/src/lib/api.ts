@@ -24,6 +24,14 @@ export interface ActiveSessionDto {
   veranstaltungName: string;
 }
 
+export interface SessionByCodeDto {
+  id: number;
+  name: string;
+  code: string;
+  status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  veranstaltungName: string;
+}
+
 export interface SessionSummaryDto {
   id: number;
   name: string;
@@ -39,6 +47,7 @@ export interface SessionDetailDto {
   name: string;
   code: string;
   status: "GEPLANT" | "LAUFEND" | "BEENDET";
+  autoStart: boolean;
   datum: string;
   startZeit: string;
   endZeit: string | null;
