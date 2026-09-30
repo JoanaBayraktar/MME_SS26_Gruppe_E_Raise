@@ -1,9 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
-// Import aus deiner Service-Datei (inklusive voteQuestion)
 import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion } from "../questions/questionsService";
-// Import der neuen SingleView-Komponente für die Detailansicht
 import { SingleView } from "./singleview";
+import QuestionsEdit from "./questions_edit";
 
 interface Question {
   id: number;
@@ -16,6 +15,7 @@ interface Question {
   comments: number;
   votes: number;
   voted: boolean;
+  status?: "neu" | "gefragt" | "beantwortet";
 }
 
 export default function Questions() {
@@ -27,18 +27,27 @@ export default function Questions() {
   const [isTopicOpen, setIsTopicOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
 
-  // State für die Sortierung ("newest" oder "votes") und das Dropdown
   const [sortBy, setSortBy] = useState<"newest" | "votes">("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // State für die ausgewählte Frage in der Detailansicht (SingleView)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  
+  // State für das Bearbeitungs-Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const slideBoxRef = useRef<HTMLDivElement>(null);
   const topicBoxRef = useRef<HTMLDivElement>(null);
   const sortBoxRef = useRef<HTMLDivElement>(null);
 
-  // Dropdown außerhalb schließen
+  // Event-Listener, um das Modal über den Header-Button in der NavigationPage zu öffnen
+  useEffect(() => {
+    const handleOpenEdit = () => setIsEditModalOpen(true);
+    window.addEventListener("open-questions-edit", handleOpenEdit as EventListener);
+    return () => {
+      window.removeEventListener("open-questions-edit", handleOpenEdit as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     const closeOnOutsideClick = (event: PointerEvent) => {
       const target = event.target as Node;
@@ -50,21 +59,18 @@ export default function Questions() {
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
 
-  // Daten abrufen (nutzt automatisch die aktive Session oder den #0000 Fallback)
   useEffect(() => {
     fetchQuestions()
       .then((data) => setQuestions(data))
       .catch((err) => console.error("Fehler beim Laden:", err));
   }, []);
 
-  // Frage absenden
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = newQuestionText.trim();
     if (!text) return;
 
     try {
-      // Autor über separate Methode ermitteln (berücksichtigt Anonym-Status)
       const authorName = await determineAuthorName();
 
       const savedQuestion = await sendQuestion({
@@ -74,10 +80,8 @@ export default function Questions() {
         topic: selectedTopic || "Allgemein",
       });
 
-      // UI aktualisieren mit der Antwort aus dem Backend (inkl. echter DB-ID)
       setQuestions((current) => [savedQuestion, ...current]);
       
-      // Formular zurücksetzen
       setNewQuestionText("");
       setSlideNumber("");
       setSelectedTopic("");
@@ -88,16 +92,14 @@ export default function Questions() {
     }
   };
 
-  // Vote-Handler mit Optimistic Updates und automatischem Rollback
   const handleVote = async (questionId: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation(); // Verhindert, dass sich beim Voten die Detailansicht öffnet
+    if (e) e.stopPropagation();
 
     const targetQuestion = questions.find((q) => q.id === questionId);
     if (!targetQuestion) return;
 
     const newVotedState = !targetQuestion.voted;
 
-    // 1. UI sofort aktualisieren (Optimistic Update)
     setQuestions((current) =>
       current.map((question) =>
         question.id === questionId
@@ -110,11 +112,9 @@ export default function Questions() {
       ),
     );
 
-    // 2. Backend-Service aufrufen
     try {
       const updatedQuestion = await voteQuestion(questionId);
 
-      // Falls das Backend die genaue Antwort zurückliefert, synchronisieren
       if (updatedQuestion && typeof updatedQuestion.votes === "number") {
         setQuestions((current) =>
           current.map((question) =>
@@ -127,7 +127,6 @@ export default function Questions() {
     } catch (error) {
       console.error("Fehler beim Voten im Backend:", error);
 
-      // 3. Bei Fehler Änderungen im UI rückgängig machen (Rollback)
       setQuestions((current) =>
         current.map((question) =>
           question.id === questionId
@@ -144,14 +143,12 @@ export default function Questions() {
     }
   };
 
-  // Sortierte Fragen basierend auf der Auswahl berechnen
   const sortedQuestions = [...questions].sort((a, b) => {
     if (sortBy === "votes") {
       if (b.votes !== a.votes) {
-        return b.votes - a.votes; // Höchste Votes zuerst
+        return b.votes - a.votes;
       }
     }
-    // Standard / "newest": Höhere ID = neuer erstellt
     return b.id - a.id;
   });
 
@@ -327,11 +324,20 @@ export default function Questions() {
         </div>
       </div>
 
-      {/* Detailansicht (SingleView) als Bottom-Sheet, wenn eine Frage ausgewählt ist */}
+      {/* Detailansicht (SingleView) als Bottom-Sheet */}
       {selectedQuestion && (
         <SingleView 
           question={selectedQuestion} 
           onClose={() => setSelectedQuestion(null)} 
+        />
+      )}
+
+      {/* Bearbeitungs-Modal */}
+      {isEditModalOpen && (
+        <QuestionsEdit
+          questions={questions}
+          onClose={() => setIsEditModalOpen(false)}
+          onUpdateQuestions={(updated) => setQuestions(updated)}
         />
       )}
     </div>

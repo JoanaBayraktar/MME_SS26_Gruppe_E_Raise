@@ -34,6 +34,15 @@ export function AnimatedRoutes() {
         <Route path="neu" element={<NewSessionPage />} />
       </Route>
       <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
+      
+      {/* NEU: Dozenten Live-Ansicht mit NavigationPage und Unterseiten */}
+      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/live`} element={<NavigationPage isDozent={true} />}>
+        <Route index element={<Navigate to="questions" replace />} />
+        <Route path="questions" element={<Questions />} />
+        <Route path="umfrage" element={<Umfrage />} />
+        <Route path="archiv" element={<Archiv />} />
+      </Route>
+
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route
         path={ROUTES.DOZENT_ARCHIV}
@@ -45,9 +54,9 @@ export function AnimatedRoutes() {
       />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
-        <Route path={ROUTES.QUESTIONS} element={<Questions />} />
-        <Route path={ROUTES.UMFRAGE} element={<Umfrage />} />
-        <Route path={ROUTES.ARCHIV} element={<Archiv />} />
+        <Route path="questions" element={<Questions />} />
+        <Route path="umfrage" element={<Umfrage />} />
+        <Route path="archiv" element={<Archiv />} />
       </Route>
     </Routes>
   );

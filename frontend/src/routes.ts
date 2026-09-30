@@ -39,8 +39,18 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.DOZENT_VERANSTALTUNG_NEW]: 3,
 };
 
-export function buildSessionDetailPath(sessionId: number): string {
+export function buildSessionDetailPath(sessionId: number | string): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}`;
+}
+
+// Neu: Hilfsfunktion für den Live-Pfad einer Dozenten-Session
+export function buildSessionLivePath(sessionId: number | string): string {
+  return `${ROUTES.DOZENT_SESSIONS}/${sessionId}/live`;
+}
+
+// Prüft, ob eine Route eine Live-Ansicht einer Session ist ("/dozent/sessions/123/live...")
+function isSessionLiveRoute(pathname: string): boolean {
+  return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/live");
 }
 
 // Detailseite einer einzelnen Session ("/dozent/sessions/123") – dynamisch,
@@ -50,12 +60,15 @@ function isSessionDetailRoute(pathname: string): boolean {
   return (
     pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) &&
     pathname !== ROUTES.DOZENT_SESSION_NEW &&
+    !pathname.includes("/live") &&
     /^\/\d+$/.test(pathname.slice(ROUTES.DOZENT_SESSIONS.length))
   );
 }
 
 export function getRouteDepth(pathname: string): number | undefined {
-  if (isSessionDetailRoute(pathname)) return ROUTE_DEPTH[ROUTES.DOZENT_SESSION_NEW];
+  if (isSessionDetailRoute(pathname) || isSessionLiveRoute(pathname)) {
+    return ROUTE_DEPTH[ROUTES.DOZENT_SESSION_NEW];
+  }
   return ROUTE_DEPTH[pathname];
 }
 

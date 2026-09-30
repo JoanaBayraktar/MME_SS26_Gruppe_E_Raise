@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes";
 
 const TABS = [
-  { id: "questions", label: "Fragen", path: ROUTES.QUESTIONS },
-  { id: "umfrage", label: "Umfrage", path: ROUTES.UMFRAGE },
-  { id: "archiv", label: "Archiv", path: ROUTES.ARCHIV },
+  { id: "questions", label: "Fragen", path: "questions" },
+  { id: "umfrage", label: "Umfrage", path: "umfrage" },
+  { id: "archiv", label: "Archiv", path: "archiv" },
 ] as const;
 
-export default function NavigationPage() {
+interface NavigationPageProps {
+  isDozent?: boolean;
+}
+
+export default function NavigationPage({ isDozent = false }: NavigationPageProps) {
   const [isContentScrolling, setIsContentScrolling] = useState(false);
   const scrollEndTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Prüft flexibel, ob wir uns aktuell in der Fragenansicht befinden
+  const isQuestionsView = location.pathname.endsWith("questions");
 
   const handleContentScroll = () => {
     setIsContentScrolling(true);
@@ -32,22 +42,53 @@ export default function NavigationPage() {
     };
   }, []);
 
+  // Archiv-Tab für Dozenten ausblenden
+  const visibleTabs = TABS.filter(
+    (tab) => !(isDozent && tab.id === "archiv")
+  );
+
   return (
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white">
       <header className="shrink-0 border-b border-gray-200 bg-white px-5 pb-0 pt-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">MME Blockkurs</h1>
-            <p className="mt-0.5 text-sm text-gray-500">Session 3 · Mo 10:15</p>
+          <div className="flex items-center gap-3">
+            {/* Zurück-Button für Dozenten ins Hauptmenü */}
+            {isDozent && (
+              <button
+                onClick={() => navigate(ROUTES.DOZENT_DASHBOARD)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                title="Zurück zum Hauptmenü"
+              >
+                <span className="text-lg font-bold leading-none">‹</span>
+              </button>
+            )}
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-gray-900">MME Blockkurs</h1>
+              <p className="mt-0.5 text-sm text-gray-500">Session 3 · Mo 10:15</p>
+            </div>
           </div>
 
-          <span className="rounded-full bg-pink-100 px-3 py-1 text-sm font-semibold text-pink-600">
-            #2468
-          </span>
+          <div className="flex items-center gap-3">
+            {/* "Fragen bearbeiten" Button – sendet ein Event an die Questions-Komponente */}
+            {isQuestionsView && (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-questions-edit"));
+                }}
+                className="rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors"
+              >
+                Fragen bearbeiten
+              </button>
+            )}
+
+            <span className="rounded-full bg-pink-100 px-3 py-1 text-sm font-semibold text-pink-600">
+              #2468
+            </span>
+          </div>
         </div>
 
         <nav aria-label="Bereiche" className="mt-5 flex justify-center space-x-10">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <NavLink
               key={tab.id}
               to={tab.path}

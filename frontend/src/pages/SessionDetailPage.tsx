@@ -76,7 +76,21 @@ export default function SessionDetailPage() {
             </div>
           </Card>
 
-          <Card className="text-sm text-gray-500">Live-Ansicht mit Fragen &amp; Umfragen folgt in Issue #16.</Card>
+          {/* Live-Ansicht Button / Integration */}
+          <Card className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">Live-Ansicht</h3>
+              <p className="text-sm text-gray-500">Öffne die Live-Ansicht mit Fragen &amp; Umfragen</p>
+            </div>
+            <button
+              onClick={() => {
+                navigate(`/dozent/sessions/${sessionId}/live`); 
+              }}
+              className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors"
+            >
+              Moderation öffnen
+            </button>
+          </Card>
         </div>
       )}
     </DashboardLayout>
