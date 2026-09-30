@@ -1,10 +1,12 @@
 import { RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import {
-  ActiveUmfrageDto,
-  getJson,
-  SessionByCodeDto,
-} from "../../lib/api";
+  type TouchEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { ActiveUmfrageDto, getJson, SessionByCodeDto } from "../../lib/api";
 import { ROLE } from "../../lib/role";
 import { getStoredSession } from "../../lib/session";
 
@@ -14,6 +16,8 @@ export default function Umfrage() {
   const [umfrage, setUmfrage] = useState<ActiveUmfrageDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
 
   // lädt die aktuell aktive umfrage für die beigetretene session
   const loadUmfrage = useCallback(async (showRefreshing = false) => {
@@ -24,10 +28,7 @@ export default function Umfrage() {
     try {
       const storedSession = getStoredSession();
 
-      if (
-        storedSession?.role !== ROLE.STUDENT ||
-        !storedSession.sessionCode
-      ) {
+      if (storedSession?.role !== ROLE.STUDENT || !storedSession.sessionCode) {
         setUmfrage(null);
         return;
       }
@@ -48,6 +49,36 @@ export default function Umfrage() {
       setIsRefreshing(false);
     }
   }, []);
+
+  // merkt sich den startpunkt wenn oben in der seite gezogen wird
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const scrollContainer = event.currentTarget.closest("main");
+
+    if (scrollContainer && scrollContainer.scrollTop <= 0) {
+      touchStartY.current = event.touches[0].clientY;
+    }
+  };
+
+  // misst wie weit nach unten gezogen wurde
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    if (touchStartY.current === null) return;
+
+    const distance = event.touches[0].clientY - touchStartY.current;
+
+    if (distance > 0) {
+      setPullDistance(Math.min(distance, 80));
+    }
+  };
+
+  // aktualisiert die umfrage sobald weit genug nach unten gezogen wurde
+  const handleTouchEnd = () => {
+    if (pullDistance >= 60) {
+      void loadUmfrage(true);
+    }
+
+    touchStartY.current = null;
+    setPullDistance(0);
+  };
 
   useEffect(() => {
     void loadUmfrage();
@@ -70,7 +101,19 @@ export default function Umfrage() {
 
   if (!umfrage) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center"
+      >
+        {pullDistance > 0 && (
+          <p className="mb-4 text-xs text-gray-400">
+            {pullDistance >= 60
+              ? "Loslassen zum Aktualisieren"
+              : "Zum Aktualisieren weiterziehen"}
+          </p>
+        )}
         <h2 className="text-lg font-semibold text-gray-900">
           Keine aktive Umfrage vorhanden
         </h2>
@@ -96,7 +139,13 @@ export default function Umfrage() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="rounded-2xl bg-white p-6"
+    >
+      {" "}
       <p className="text-sm font-medium text-pink-600">Aktive Umfrage</p>
       <h2 className="mt-2 text-lg font-bold text-gray-900">
         {umfrage.frageText}
