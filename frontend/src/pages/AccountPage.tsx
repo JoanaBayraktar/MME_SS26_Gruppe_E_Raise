@@ -20,27 +20,31 @@ import { ROUTES } from "../routes";
 
 const PASSWORD_MIN_LENGTH = 8;
 
-const profileSchema = z
-  .object({
-    vorname: z.string().trim().min(1, "Bitte gib deinen Vornamen ein."),
-    nachname: z.string().trim().min(1, "Bitte gib deinen Nachnamen ein."),
-    email: z.string().trim().email("Bitte gib eine gültige E-Mail-Adresse ein."),
-    currentPassword: z.string().optional(),
-    newPassword: z.string().optional(),
-  })
-  .refine((values) => !values.newPassword || (values.currentPassword ?? "").length > 0, {
-    message: "Bitte gib dein aktuelles Passwort ein, um ein neues zu setzen.",
-    path: ["currentPassword"],
-  })
-  .refine((values) => !values.newPassword || values.newPassword.length >= PASSWORD_MIN_LENGTH, {
-    message: `Das neue Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben.`,
-    path: ["newPassword"],
-  });
+const profileSchema = z.object({
+  vorname: z.string().trim().min(1, "Bitte gib deinen Vornamen ein."),
+  nachname: z.string().trim().min(1, "Bitte gib deinen Nachnamen ein."),
+  email: z.string().trim().email("Bitte gib eine gültige E-Mail-Adresse ein."),
+});
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Bitte gib dein aktuelles Passwort ein."),
+    newPassword: z
+      .string()
+      .min(PASSWORD_MIN_LENGTH, `Das neue Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben.`),
+    newPasswordRepeat: z.string(),
+  })
+  .refine((values) => values.newPassword === values.newPasswordRepeat, {
+    message: "Die Passwörter stimmen nicht überein.",
+    path: ["newPasswordRepeat"],
+  });
+
+type PasswordFormValues = z.infer<typeof passwordSchema>;
+
 type LoadState = "loading" | "loaded" | "error";
-type ConfirmDialog = "none" | "logout" | "delete-1" | "delete-2";
+type ConfirmDialog = "none" | "password" | "logout" | "delete-1" | "delete-2";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -49,12 +53,24 @@ export default function AccountPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog>("none");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({ resolver: zodResolver(profileSchema) });
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPasswordForm,
+    watch: watchPassword,
+    formState: { errors: passwordErrors, isSubmitting: isSubmittingPassword, isValid: isPasswordFormValid },
+  } = useForm<PasswordFormValues>({ resolver: zodResolver(passwordSchema), mode: "onChange" });
+  const newPassword = watchPassword("newPassword");
+  const newPasswordRepeat = watchPassword("newPasswordRepeat");
+  const newPasswordIsValidLength = (newPassword?.length ?? 0) >= PASSWORD_MIN_LENGTH;
+  const newPasswordsMatch = !!newPassword && newPassword === newPasswordRepeat;
 
   useEffect(() => {
     getJson<DozentDto>("/api/auth/me")
@@ -80,8 +96,6 @@ export default function AccountPage() {
         vorname: values.vorname,
         nachname: values.nachname,
         email: values.email,
-        currentPassword: values.currentPassword || undefined,
-        newPassword: values.newPassword || undefined,
       });
       setStoredSession({ role: ROLE.DOZENT, name: `${updated.vorname} ${updated.nachname}` });
       setDozent(updated);
@@ -89,6 +103,24 @@ export default function AccountPage() {
       setSaveSuccess(true);
     } catch (err) {
       setSaveError(err instanceof ApiError ? err.message : "Profil konnte nicht gespeichert werden.");
+    }
+  };
+
+  const onSubmitPassword = (close: () => void) => async (values: PasswordFormValues) => {
+    if (!dozent) return;
+    setPasswordError(null);
+    try {
+      await patchJson<DozentDto>("/api/auth/me", {
+        vorname: dozent.vorname,
+        nachname: dozent.nachname,
+        email: dozent.email,
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      resetPasswordForm();
+      close();
+    } catch (err) {
+      setPasswordError(err instanceof ApiError ? err.message : "Passwort konnte nicht geändert werden.");
     }
   };
 
@@ -129,12 +161,6 @@ export default function AccountPage() {
               <Field label="E-Mail" htmlFor="email" error={errors.email?.message}>
                 <Input id="email" type="email" {...register("email")} />
               </Field>
-              <Field label="Aktuelles Passwort" htmlFor="currentPassword" error={errors.currentPassword?.message}>
-                <Input id="currentPassword" type="password" {...register("currentPassword")} />
-              </Field>
-              <Field label="Neues Passwort" htmlFor="newPassword" error={errors.newPassword?.message}>
-                <Input id="newPassword" type="password" {...register("newPassword")} />
-              </Field>
 
               <Button type="submit" disabled={isSubmitting} className="w-auto px-4">
                 {isSubmitting ? "Wird gespeichert..." : "Speichern"}
@@ -142,20 +168,101 @@ export default function AccountPage() {
             </form>
           </Card>
 
-          <Card className="flex max-w-lg items-center justify-between">
-            <p className="text-sm text-gray-700">Von diesem Gerät abmelden.</p>
-            <Button variant="outline" className="w-auto px-4" onClick={() => setConfirmDialog("logout")}>
-              Logout
-            </Button>
-          </Card>
+          <Card className="max-w-lg !p-0">
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Passwort ändern</p>
+                <p className="text-xs text-gray-500">Vergib ein neues Passwort für deinen Account.</p>
+              </div>
+              <Button
+                variant="outline"
+                className="!w-44 shrink-0"
+                onClick={() => {
+                  setPasswordError(null);
+                  resetPasswordForm();
+                  setConfirmDialog("password");
+                }}
+              >
+                Passwort ändern
+              </Button>
+            </div>
 
-          <Card className="flex max-w-lg items-center justify-between border-red-100">
-            <p className="text-sm text-gray-700">Account unwiderruflich löschen.</p>
-            <Button variant="outline" className="w-auto px-4 !text-red-600" onClick={() => setConfirmDialog("delete-1")}>
-              Account löschen
-            </Button>
+            <div className="flex items-center justify-between gap-4 border-t border-gray-100 px-5 py-4">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Logout</p>
+                <p className="text-xs text-gray-500">Meldet dich von diesem Gerät ab.</p>
+              </div>
+              <Button
+                variant="outline"
+                className="!w-44 shrink-0"
+                onClick={() => setConfirmDialog("logout")}
+              >
+                Logout
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 border-t border-gray-100 px-5 py-4">
+              <div>
+                <p className="text-sm font-medium text-red-600">Account löschen</p>
+                <p className="text-xs text-gray-500">Entfernt deinen Account unwiderruflich.</p>
+              </div>
+              <Button
+                variant="outline"
+                className="!w-44 shrink-0 !text-red-600"
+                onClick={() => setConfirmDialog("delete-1")}
+              >
+                Account löschen
+              </Button>
+            </div>
           </Card>
         </div>
+      )}
+
+      {confirmDialog === "password" && (
+        <Modal className="max-w-sm p-6" onClose={() => setConfirmDialog("none")}>
+          {(close) => (
+            <form onSubmit={handlePasswordSubmit(onSubmitPassword(close))}>
+              <h2 className="text-lg font-bold text-gray-900">Passwort ändern</h2>
+
+              <div className="mt-4 flex flex-col gap-4">
+                {passwordError && <Alert tone="error">{passwordError}</Alert>}
+
+                <Field
+                  label="Aktuelles Passwort"
+                  htmlFor="currentPassword"
+                  error={passwordErrors.currentPassword?.message}
+                >
+                  <Input id="currentPassword" type="password" {...registerPassword("currentPassword")} />
+                </Field>
+                <Field label="Neues Passwort" htmlFor="newPassword" error={passwordErrors.newPassword?.message}>
+                  <Input id="newPassword" type="password" {...registerPassword("newPassword")} />
+                  {!passwordErrors.newPassword && newPasswordIsValidLength && (
+                    <p className="mt-1 text-xs text-green-600">Passwort ist lang genug.</p>
+                  )}
+                </Field>
+                <Field
+                  label="Neues Passwort wiederholen"
+                  htmlFor="newPasswordRepeat"
+                  error={passwordErrors.newPasswordRepeat?.message}
+                >
+                  <Input id="newPasswordRepeat" type="password" {...registerPassword("newPasswordRepeat")} />
+                  {!passwordErrors.newPasswordRepeat && newPasswordsMatch && (
+                    <p className="mt-1 text-xs text-green-600">Passwörter stimmen überein.</p>
+                  )}
+                </Field>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Button type="submit" disabled={isSubmittingPassword || !isPasswordFormValid}>
+                  {isSubmittingPassword ? "Wird geändert..." : "Bestätigen"}
+                </Button>
+                <Button type="button" variant="outline" onClick={close}>
+                  Abbrechen
+                </Button>
+              </div>
+            </form>
+          )}
+        </Modal>
       )}
 
       {confirmDialog === "logout" && (
