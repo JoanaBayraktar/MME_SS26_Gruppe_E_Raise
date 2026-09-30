@@ -3,7 +3,11 @@ import { SlidersHorizontal, ArrowUpDown, Calendar, BookOpen, ChevronRight, X } f
 // Import your actual fetch function returning ArchivedEntryDto[]
 import { fetchArchivedEntries, ArchivedEntryDto } from "./archivService";
 
-export default function Archiv() {
+interface ArchivProps {
+  onSelectVeranstaltung?: (veranstaltungId: number) => void;
+}
+
+export default function Archiv({ onSelectVeranstaltung }: ArchivProps) {
   const [entries, setEntries] = useState<ArchivedEntryDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +64,12 @@ export default function Archiv() {
 
     return result;
   }, [entries, selectedKapitel, sortOrder]);
+
+  const handleCardClick = (veranstaltungId: number) => {
+    if (onSelectVeranstaltung) {
+      onSelectVeranstaltung(veranstaltungId);
+    }
+  };
 
   return (
     <div className="space-y-4 animate-fade-in motion-reduce:animate-none relative">
@@ -186,7 +196,8 @@ export default function Archiv() {
           {filteredAndSortedEntries.map((entry) => (
             <div
               key={entry.id}
-              className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs hover:border-gray-200 transition-all cursor-pointer group"
+              onClick={() => handleCardClick(entry.veranstaltungId)}
+              className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs hover:border-pink-200 hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
