@@ -16,10 +16,13 @@ import {
 } from "../../lib/api";
 import { ROLE } from "../../lib/role";
 import { getStoredSession, getStudentToken } from "../../lib/session";
+import { useNavigate } from "react-router-dom";
 
 const REFRESH_INTERVAL_MS = 5000;
 
 export default function Umfrage() {
+  const navigate = useNavigate();
+
   const [umfrage, setUmfrage] = useState<ActiveUmfrageDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -281,6 +284,14 @@ export default function Umfrage() {
                 </div>
               </div>
             ))}
+
+            <button
+              type="button"
+              onClick={() => navigate("../questions")}
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Zurück zu den Fragen
+            </button>
           </div>
         </div>
       ) : (
