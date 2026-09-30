@@ -114,62 +114,38 @@ export default function DozentDashboardPage() {
                   <td className="px-4 py-3 font-semibold text-gray-900">
                     {veranstaltung.name}
                   </td>
+
                   <td className="px-4 py-3 text-gray-500">
                     {veranstaltung.kuerzel}
                   </td>
+
                   <td className="px-4 py-3 text-gray-500">
                     {veranstaltung.sessionCount} Sessions
                   </td>
+
                   <td className="px-4 py-3">
                     <Badge tone={SESSION_STATUS_TONE[veranstaltung.status]}>
                       {SESSION_STATUS_LABEL[veranstaltung.status]}
                     </Badge>
                   </td>
-                  <tr
-                    key={veranstaltung.id}
-                    onClick={() =>
-                      navigate(
-                        `${ROUTES.DOZENT_SESSIONS}?veranstaltung=${veranstaltung.id}`,
-                      )
-                    }
-                    className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3 font-semibold text-gray-900">
-                      {veranstaltung.name}
-                    </td>
 
-                    <td className="px-4 py-3 text-gray-500">
-                      {veranstaltung.kuerzel}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-500">
-                      {veranstaltung.sessionCount} Sessions
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <Badge tone={SESSION_STATUS_TONE[veranstaltung.status]}>
-                        {SESSION_STATUS_LABEL[veranstaltung.status]}
-                      </Badge>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex w-auto items-center gap-2 px-3"
-                        onClick={(event) => {
-                          // verhindert dass gleichzeitig die session übersicht geöffnet wird
-                          event.stopPropagation();
-                          navigate(
-                            buildVeranstaltungDetailPath(veranstaltung.id),
-                          );
-                        }}
-                      >
-                        <Users className="h-4 w-4" />
-                        Dozent:innen
-                      </Button>
-                    </td>
-                  </tr>
+                  <td className="px-4 py-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex w-auto items-center gap-2 px-3"
+                      onClick={(event) => {
+                        // verhindert dass gleichzeitig die session übersicht geöffnet wird
+                        event.stopPropagation();
+                        navigate(
+                          buildVeranstaltungDetailPath(veranstaltung.id),
+                        );
+                      }}
+                    >
+                      <Users className="h-4 w-4" />
+                      Dozent:innen
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
