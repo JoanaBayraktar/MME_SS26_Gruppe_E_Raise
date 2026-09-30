@@ -51,7 +51,7 @@ export function buildSessionLivePath(sessionId: number | string): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}/live`;
 }
 
-// Neu: Hilfsfunktion für den Beendet-Pfad einer Dozenten-Session
+// Hilfsfunktion für den Beendet-Pfad einer Dozenten-Session
 export function buildSessionEndedPath(sessionId: number | string): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}/ended`;
 }
@@ -64,7 +64,7 @@ function isSessionLiveRoute(pathname: string): boolean {
 // Prüft, ob eine Route die Beendet-Ansicht einer Session ist ("/dozent/sessions/123/ended...")
 function isSessionEndedRoute(pathname: string): boolean {
   return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/ended");
-} // <-- Hier wurde die Klammer korrigiert!
+}
 
 // Baut den Link zur jeweiligen Veranstaltung zusammen
 export function buildVeranstaltungDetailPath(

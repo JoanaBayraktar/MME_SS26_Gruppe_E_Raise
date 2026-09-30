@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams, Outlet } from "react-router-dom";
 import StyleGuide from "./StyleGuide";
 import OnboardingPage from "./pages/OnboardingPage";
 import JoinPage from "./pages/JoinPage";
@@ -47,7 +47,9 @@ function DozentLiveLayout() {
       sessionTitle={session ? `${session.name} · ${formatUhrzeit(session.startZeit)}` : "Lade Session..."}
       courseCode={session ? `#${session.code}` : "..."}
       onBack={() => navigate(sessionId ? `${ROUTES.DOZENT_SESSIONS}/${sessionId}` : ROUTES.DOZENT_SESSIONS)}
-    />
+    >
+      <Outlet />
+    </NavigationPage>
   );
 }
 
@@ -65,12 +67,14 @@ export function AnimatedRoutes() {
 
       {/* Dozenten Dashboard & Sessions */}
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
+      
+      {/* Sessions and Nested Sub-routes */}
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
         <Route path=":sessionId" element={<SessionDetailPage />} />
       </Route>
 
-      {/* Dozenten Live-Ansicht mit dynamischem Wrapper und Nested Routes */}
+      {/* Dozenten Live-Ansicht mit dynamischem Wrapper & Nested Children */}
       <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/live`} element={<DozentLiveLayout />}>
         <Route index element={<Navigate to="questions" replace />} />
         <Route path="questions" element={<Questions />} />
@@ -85,8 +89,8 @@ export function AnimatedRoutes() {
       {/* Veranstaltungen & Details */}
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route path={`${ROUTES.DOZENT_VERANSTALTUNGEN}/:veranstaltungId`} element={<VeranstaltungDetailPage />} />
-
-      {/* Sonstiges */}
+      
+      {/* Sonstiges & Misc Pages */}
       <Route
         path={ROUTES.DOZENT_ARCHIV}
         element={
@@ -100,7 +104,7 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_ACCOUNT} element={<AccountPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
 
-      {/* Allgemeine Navigation (falls benötigt) */}
+      {/* Fallback Navigation Route */}
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
         <Route path="questions" element={<Questions />} />
         <Route path="umfrage" element={<Umfrage />} />
