@@ -1,9 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
-// Import aus deiner Service-Datei (inklusive voteQuestion)
-import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion } from "../questions/questionsService";
-// Import der neuen SingleView-Komponente für die Detailansicht
+import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion, updateQuestionStatus } from "../questions/questionsService";
 import { SingleView } from "./singleview";
+import QuestionsEdit from "./questions_edit";
 
 interface Question {
   id: number;
@@ -16,6 +15,7 @@ interface Question {
   comments: number;
   votes: number;
   voted: boolean;
+  status?: "neu" | "gefragt" | "beantwortet";
 }
 
 export default function Questions() {
@@ -27,18 +27,29 @@ export default function Questions() {
   const [isTopicOpen, setIsTopicOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
 
-  // State für die Sortierung ("newest" oder "votes") und das Dropdown
   const [sortBy, setSortBy] = useState<"newest" | "votes">("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // State für die ausgewählte Frage in der Detailansicht (SingleView)
+  // State für das Ein- und Ausblenden der beantworteten Fragen
+  const [isAnsweredOpen, setIsAnsweredOpen] = useState(false);
+
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  
+  // State für das Bearbeitungs-Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const slideBoxRef = useRef<HTMLDivElement>(null);
   const topicBoxRef = useRef<HTMLDivElement>(null);
   const sortBoxRef = useRef<HTMLDivElement>(null);
 
-  // Dropdown außerhalb schließen
+  useEffect(() => {
+    const handleOpenEdit = () => setIsEditModalOpen(true);
+    window.addEventListener("open-questions-edit", handleOpenEdit as EventListener);
+    return () => {
+      window.removeEventListener("open-questions-edit", handleOpenEdit as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     const closeOnOutsideClick = (event: PointerEvent) => {
       const target = event.target as Node;
@@ -50,21 +61,18 @@ export default function Questions() {
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
 
-  // Daten abrufen (nutzt automatisch die aktive Session oder den #0000 Fallback)
   useEffect(() => {
     fetchQuestions()
       .then((data) => setQuestions(data))
       .catch((err) => console.error("Fehler beim Laden:", err));
   }, []);
 
-  // Frage absenden
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = newQuestionText.trim();
     if (!text) return;
 
     try {
-      // Autor über separate Methode ermitteln (berücksichtigt Anonym-Status)
       const authorName = await determineAuthorName();
 
       const savedQuestion = await sendQuestion({
@@ -74,10 +82,8 @@ export default function Questions() {
         topic: selectedTopic || "Allgemein",
       });
 
-      // UI aktualisieren mit der Antwort aus dem Backend (inkl. echter DB-ID)
       setQuestions((current) => [savedQuestion, ...current]);
       
-      // Formular zurücksetzen
       setNewQuestionText("");
       setSlideNumber("");
       setSelectedTopic("");
@@ -88,16 +94,14 @@ export default function Questions() {
     }
   };
 
-  // Vote-Handler mit Optimistic Updates und automatischem Rollback
   const handleVote = async (questionId: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation(); // Verhindert, dass sich beim Voten die Detailansicht öffnet
+    if (e) e.stopPropagation();
 
     const targetQuestion = questions.find((q) => q.id === questionId);
     if (!targetQuestion) return;
 
     const newVotedState = !targetQuestion.voted;
 
-    // 1. UI sofort aktualisieren (Optimistic Update)
     setQuestions((current) =>
       current.map((question) =>
         question.id === questionId
@@ -110,11 +114,9 @@ export default function Questions() {
       ),
     );
 
-    // 2. Backend-Service aufrufen
     try {
       const updatedQuestion = await voteQuestion(questionId);
 
-      // Falls das Backend die genaue Antwort zurückliefert, synchronisieren
       if (updatedQuestion && typeof updatedQuestion.votes === "number") {
         setQuestions((current) =>
           current.map((question) =>
@@ -127,7 +129,6 @@ export default function Questions() {
     } catch (error) {
       console.error("Fehler beim Voten im Backend:", error);
 
-      // 3. Bei Fehler Änderungen im UI rückgängig machen (Rollback)
       setQuestions((current) =>
         current.map((question) =>
           question.id === questionId
@@ -144,110 +145,242 @@ export default function Questions() {
     }
   };
 
-  // Sortierte Fragen basierend auf der Auswahl berechnen
-  const sortedQuestions = [...questions].sort((a, b) => {
-    if (sortBy === "votes") {
-      if (b.votes !== a.votes) {
-        return b.votes - a.votes; // Höchste Votes zuerst
+  const handleOpenQuestion = async (question: Question) => {
+    setSelectedQuestion(question);
+
+    if (question.status === "neu") {
+      try {
+        setQuestions((current) =>
+          current.map((q) => (q.id === question.id ? { ...q, status: "gefragt" } : q))
+        );
+        setSelectedQuestion((prev) => (prev ? { ...prev, status: "gefragt" } : null));
+
+        await updateQuestionStatus(question.id, "gefragt");
+      } catch (error) {
+        console.error("Fehler beim Aktualisieren des Status:", error);
       }
     }
-    // Standard / "newest": Höhere ID = neuer erstellt
-    return b.id - a.id;
-  });
+  };
+
+  // Trennung in aktive und beantwortete Fragen
+  const activeQuestions = questions.filter((q) => q.status !== "beantwortet");
+  const answeredQuestions = questions.filter((q) => q.status === "beantwortet");
+
+  const sortItems = (list: Question[]) => {
+    return [...list].sort((a, b) => {
+      if (sortBy === "votes") {
+        if (b.votes !== a.votes) {
+          return b.votes - a.votes;
+        }
+      }
+      return b.id - a.id;
+    });
+  };
+
+  const sortedActiveQuestions = sortItems(activeQuestions);
+  const sortedAnsweredQuestions = sortItems(answeredQuestions);
 
   const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"];
 
+  const getStatusBadgeStyle = (status?: string) => {
+    switch (status) {
+      case "beantwortet":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "gefragt":
+        return "bg-pink-100 text-pink-700 border-pink-200";
+      case "neu":
+      default:
+        return "bg-amber-100 text-amber-800 border-amber-200";
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-24 animate-fade-in motion-reduce:animate-none">
+    <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-32 px-4 animate-fade-in motion-reduce:animate-none">
       
-      {/* Sortier-Leiste oben */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {sortedQuestions.length} {sortedQuestions.length === 1 ? "Frage" : "Fragen"}
-        </span>
+      {/* Äußerer Wrapper mit reduzierter Maximalbreite und Zentrierung */}
+      <div className="w-full max-w-xl mx-auto flex flex-col flex-1">
         
-        <div className="relative" ref={sortBoxRef}>
-          <button
-            type="button"
-            onClick={() => { setIsSortOpen(!isSortOpen); setIsSlideOpen(false); setIsTopicOpen(false); }}
-            className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
-          >
-            <ArrowUpDown className="h-3.5 w-3.5 text-pink-600" />
-            <span>{sortBy === "newest" ? "Neueste" : "Meiste Votes"}</span>
-          </button>
+        {/* Sortier-Leiste oben */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {activeQuestions.length} {activeQuestions.length === 1 ? "Frage" : "Fragen"}
+          </span>
+          
+          <div className="relative" ref={sortBoxRef}>
+            <button
+              type="button"
+              onClick={() => { setIsSortOpen(!isSortOpen); setIsSlideOpen(false); setIsTopicOpen(false); }}
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+            >
+              <ArrowUpDown className="h-3.5 w-3.5 text-pink-600" />
+              <span>{sortBy === "newest" ? "Neueste" : "Meiste Votes"}</span>
+            </button>
 
-          {isSortOpen && (
-            <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl z-25">
-              <button
-                type="button"
-                onClick={() => { setSortBy("newest"); setIsSortOpen(false); }}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                  sortBy === "newest" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Neueste zuerst
-              </button>
-              <button
-                type="button"
-                onClick={() => { setSortBy("votes"); setIsSortOpen(false); }}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                  sortBy === "votes" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Meiste Votes zuerst
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Fragen-Liste */}
-      <div className="flex-1 space-y-4 mb-6">
-        {sortedQuestions.map((question) => (
-          <div 
-            key={question.id} 
-            onClick={() => setSelectedQuestion(question)}
-            className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
-          >
-            <div className="flex-1">
-              <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-gray-800">{question.author}</span>
-                <span>•</span>
-                <span>{question.time}</span>
+            {isSortOpen && (
+              <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl z-25">
+                <button
+                  type="button"
+                  onClick={() => { setSortBy("newest"); setIsSortOpen(false); }}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    sortBy === "newest" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Neueste zuerst
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSortBy("votes"); setIsSortOpen(false); }}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    sortBy === "votes" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Meiste Votes zuerst
+                </button>
               </div>
-              <p className="mb-3 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                {question.tag && <span className="rounded-full bg-pink-50 px-2.5 py-0.5 font-medium text-pink-600 border border-pink-100">{question.tag}</span>}
-                <span className="rounded-full border border-pink-100 bg-pink-50 px-2.5 py-0.5 font-medium text-pink-600">
-                  Thema: {question.topic || "Allgemein"}
-                </span>
-                <span className="ml-auto flex items-center gap-1 text-gray-400">
-                  <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
-              <button 
-                type="button"
-                onClick={(e) => handleVote(question.id, e)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                  question.voted 
-                  ? "bg-pink-600 text-white border border-pink-600" 
-                  : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
-                }`}
-              >
-                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-              </button>
-              <span className="text-xs font-bold text-gray-800">{question.votes}</span>
-            </div>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Aktive Fragen-Liste */}
+        <div className="flex-1 space-y-4">
+          {sortedActiveQuestions.map((question) => {
+            const statusValue = question.status || question.tag || "gefragt";
+            return (
+              <div 
+                key={question.id} 
+                onClick={() => handleOpenQuestion(question)}
+                className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
+              >
+                <div className="flex-1">
+                  <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
+                    <span className="font-semibold text-gray-800">{question.author}</span>
+                    <span>•</span>
+                    <span>{question.time}</span>
+                  </div>
+                  
+                  <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
+                  
+                  {/* Reihenfolge: Status -> Folie -> Thema */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+                    <span className={`rounded-full px-2.5 py-0.5 font-medium border ${getStatusBadgeStyle(statusValue)}`}>
+                      {statusValue}
+                    </span>
+                    
+                    {question.slideNumber && (
+                      <>
+                        <span>•</span>
+                        <span>Folie {question.slideNumber}</span>
+                      </>
+                    )}
+
+                    {question.topic && (
+                      <>
+                        <span>•</span>
+                        <span>{question.topic}</span>
+                      </>
+                    )}
+
+                    <span className="ml-auto flex items-center gap-1 text-gray-400">
+                      <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
+                  <button 
+                    type="button"
+                    onClick={(e) => handleVote(question.id, e)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                      question.voted 
+                      ? "bg-pink-600 text-white border border-pink-600" 
+                      : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                    }`}
+                  >
+                    <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                  </button>
+                  <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Sektion für Beantwortete Fragen */}
+        {answeredQuestions.length > 0 && (
+          <div className="mt-6">
+            <div 
+              onClick={() => setIsAnsweredOpen(!isAnsweredOpen)}
+              className="flex items-center my-8 cursor-pointer group select-none"
+            >
+              <div className="flex-grow border-t border-gray-200/80 transition-colors group-hover:border-gray-300"></div>
+              <div className="mx-4 flex items-center gap-1.5 text-xs font-medium text-gray-400 tracking-wide group-hover:text-gray-600">
+                <span className="lowercase">beantwortet ({answeredQuestions.length})</span>
+                {isAnsweredOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </div>
+              <div className="flex-grow border-t border-gray-200/80 transition-colors group-hover:border-gray-300"></div>
+            </div>
+
+            {isAnsweredOpen && (
+              <div className="space-y-4 animate-fade-in">
+                {sortedAnsweredQuestions.map((question) => (
+                  <div 
+                    key={question.id} 
+                    onClick={() => handleOpenQuestion(question)}
+                    className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-4 shadow-sm transition-all hover:bg-white hover:shadow-md cursor-pointer opacity-85 hover:opacity-100"
+                  >
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-2 text-xs text-gray-400">
+                        <span className="font-semibold text-gray-600">{question.author}</span>
+                        <span>•</span>
+                        <span>{question.time}</span>
+                      </div>
+                      
+                      <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-700">{question.text}</p>
+                      
+                      {/* Reihenfolge: Status -> Folie -> Thema */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        <span className="rounded-full px-2.5 py-0.5 font-medium border bg-emerald-100 text-emerald-800 border-emerald-200">
+                          beantwortet
+                        </span>
+                        
+                        {question.slideNumber && (
+                          <>
+                            <span>•</span>
+                            <span>Folie {question.slideNumber}</span>
+                          </>
+                        )}
+
+                        {question.topic && (
+                          <>
+                            <span>•</span>
+                            <span>{question.topic}</span>
+                          </>
+                        )}
+
+                        <span className="ml-auto flex items-center gap-1 text-gray-400">
+                          <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center border-l border-gray-200/60 pl-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-400">
+                        <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                      </div>
+                      <span className="text-xs font-bold text-gray-500">{question.votes}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* Eingabefeld unten */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent pt-8 pb-4 px-4 z-30">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-xl mx-auto">
           <form onSubmit={handleSubmit} className="relative pt-6">
             <div ref={slideBoxRef} className="absolute left-4 top-0 z-20">
               <button
@@ -327,11 +460,25 @@ export default function Questions() {
         </div>
       </div>
 
-      {/* Detailansicht (SingleView) als Bottom-Sheet, wenn eine Frage ausgewählt ist */}
+      {/* Detailansicht (SingleView) als Bottom-Sheet */}
       {selectedQuestion && (
         <SingleView 
           question={selectedQuestion} 
-          onClose={() => setSelectedQuestion(null)} 
+          onClose={() => {
+            setSelectedQuestion(null);
+            fetchQuestions()
+              .then((data) => setQuestions(data))
+              .catch((err) => console.error("Fehler beim Aktualisieren der Fragen:", err));
+          }} 
+        />
+      )}
+
+      {/* Bearbeitungs-Modal */}
+      {isEditModalOpen && (
+        <QuestionsEdit
+          questions={questions}
+          onClose={() => setIsEditModalOpen(false)}
+          onUpdateQuestions={(updated) => setQuestions(updated)}
         />
       )}
     </div>

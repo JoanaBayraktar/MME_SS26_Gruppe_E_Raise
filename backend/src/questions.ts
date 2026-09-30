@@ -35,9 +35,9 @@ router.get("/", async (req, res) => {
           : { id: "desc" },
     });
 
-    const formatted = questions.map((q) => {
+    const formatted = questions.map((q: any) => {
       const hasVoted = studentToken 
-        ? q.upvotes.some((u) => u.studentToken === String(studentToken)) 
+        ? q.upvotes.some((u: any) => u.studentToken === String(studentToken)) 
         : false;
 
       return {
@@ -48,6 +48,7 @@ router.get("/", async (req, res) => {
         tag: q.kapitel ? `Kapitel ${q.kapitel}` : "",
         topic: q.kapitel || "Allgemein",
         slideNumber: q.folienNr || undefined,
+        status: q.status ? q.status.toLowerCase() : "neu",
         comments: q.kommentare.length,
         votes: q.upvotes.length,
         voted: hasVoted,
@@ -81,13 +82,14 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "Keine aktive Session gefunden." });
     }
 
-    const newFrage = await prisma.frage.create({
+    const newFrage: any = await prisma.frage.create({
       data: {
         text: text.trim(),
         folienNr: slideNumber ? Number(slideNumber) : null,
         kapitel: topic || "Allgemein",
         sessionId: session.id,
         studentToken: studentToken || `anon-${Math.random().toString(36).substring(2, 10)}`,
+        status: "NEU",
       },
       include: {
         upvotes: true,
@@ -103,6 +105,7 @@ router.post("/", async (req, res) => {
       tag: newFrage.kapitel ? `Kapitel ${newFrage.kapitel}` : "",
       topic: newFrage.kapitel || "Allgemein",
       slideNumber: newFrage.folienNr || undefined,
+      status: newFrage.status ? newFrage.status.toLowerCase() : "neu",
       comments: 0,
       votes: 0,
       voted: false,
@@ -112,6 +115,32 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("Fehler beim Erstellen der Frage:", error);
     return res.status(500).json({ error: "Fehler beim Erstellen der Frage" });
+  }
+});
+
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const questionId = Number(id);
+
+    const validStatuses = ["neu", "gefragt", "beantwortet"];
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json({ error: "Ungültiger Status." });
+    }
+
+    const updatedQuestion: any = await prisma.frage.update({
+      where: { id: questionId },
+      data: { status: status.toUpperCase() },
+    });
+
+    return res.json({
+      id: updatedQuestion.id,
+      status: updatedQuestion.status.toLowerCase(),
+    });
+  } catch (error) {
+    console.error("Fehler beim Aktualisieren des Status:", error);
+    return res.status(500).json({ error: "Fehler beim Aktualisieren des Status" });
   }
 });
 
@@ -172,7 +201,6 @@ router.post("/:id/vote", async (req, res) => {
 // 2. KOMMENTAR-ROUTEN
 // ==========================================
 
-// Alle Kommentare für eine spezifische Frage abrufen (ohne ungültiges include)
 router.get("/:id/comments", async (req, res) => {
   try {
     const questionId = Number(req.params.id);
@@ -180,10 +208,15 @@ router.get("/:id/comments", async (req, res) => {
 
     const kommentare = await prisma.kommentar.findMany({
       where: { frageId: questionId },
+      include: { upvotes: true },
       orderBy: { erstelltAm: "asc" },
     });
 
-    const formattedComments = kommentare.map((k) => {
+    const formattedComments = kommentare.map((k: any) => {
+      const hasVoted = studentToken 
+        ? k.upvotes.some((u: any) => u.studentToken === String(studentToken)) 
+        : false;
+
       return {
         id: k.id,
         frageId: k.frageId,
@@ -192,8 +225,8 @@ router.get("/:id/comments", async (req, res) => {
         isDozent: k.isDozent,
         time: new Date(k.erstelltAm).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: k.text,
-        votes: 0, // Vorerst 0, da Upvotes für Kommentare noch nicht in DB sind
-        voted: false,
+        votes: k.upvotes.length,
+        voted: hasVoted,
         erstelltAm: k.erstelltAm,
       };
     });
@@ -205,7 +238,6 @@ router.get("/:id/comments", async (req, res) => {
   }
 });
 
-// Neuen Kommentar erstellen
 router.post("/:id/comments", async (req, res) => {
   try {
     const questionId = Number(req.params.id);
@@ -222,6 +254,7 @@ router.post("/:id/comments", async (req, res) => {
         studentToken: studentToken || null,
         isDozent: isDozent || false,
       },
+      include: { upvotes: true },
     });
 
     const formattedComment = {
@@ -241,6 +274,59 @@ router.post("/:id/comments", async (req, res) => {
   } catch (error) {
     console.error("Fehler beim Erstellen des Kommentars:", error);
     return res.status(500).json({ error: "Fehler beim Erstellen des Kommentars" });
+  }
+});
+
+// NEU: Route zum Umschalten von Kommentar-Upvotes
+router.post("/comments/:id/vote", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { studentToken } = req.body;
+    const commentId = Number(id);
+
+    if (!studentToken) {
+      return res.status(400).json({ error: "StudentToken ist erforderlich." });
+    }
+
+    const existingUpvote = await prisma.kommentarUpvote.findFirst({
+      where: {
+        kommentarId: commentId,
+        studentToken: String(studentToken),
+      },
+    });
+
+    if (existingUpvote) {
+      await prisma.kommentarUpvote.delete({
+        where: { id: existingUpvote.id },
+      });
+    } else {
+      await prisma.kommentarUpvote.create({
+        data: {
+          kommentarId: commentId,
+          studentToken: String(studentToken),
+        },
+      });
+    }
+
+    const updatedComment = await prisma.kommentar.findUnique({
+      where: { id: commentId },
+      include: { upvotes: true },
+    });
+
+    if (!updatedComment) {
+      return res.status(404).json({ error: "Kommentar nicht gefunden." });
+    }
+
+    const hasVoted = updatedComment.upvotes.some((u) => u.studentToken === studentToken);
+
+    return res.json({
+      id: updatedComment.id,
+      votes: updatedComment.upvotes.length,
+      voted: hasVoted,
+    });
+  } catch (error) {
+    console.error("Fehler beim Umschalten des Kommentar-Votes:", error);
+    return res.status(500).json({ error: "Fehler beim Speichern des Votes" });
   }
 });
 

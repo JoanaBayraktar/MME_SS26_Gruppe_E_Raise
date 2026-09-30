@@ -1,7 +1,7 @@
 import { QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Modal } from "../components/ui";
 import { ActiveSessionDto, getJson, SessionByCodeDto } from "../lib/api";
 import { ROLE } from "../lib/role";
@@ -9,15 +9,13 @@ import { getStoredSession } from "../lib/session";
 import { ROUTES } from "../routes";
 
 const TABS = [
-  { id: "questions", label: "Fragen", path: ROUTES.QUESTIONS },
-  { id: "umfrage", label: "Umfrage", path: ROUTES.UMFRAGE },
-  { id: "archiv", label: "Archiv", path: ROUTES.ARCHIV },
+  { id: "questions", label: "Fragen", path: "questions" },
+  { id: "umfrage", label: "Umfrage", path: "umfrage" },
+  { id: "archiv", label: "Archiv", path: "archiv" },
 ] as const;
 
 // Wie oft die Header-Daten neu geladen werden, damit sie mit der
-// tatsächlichen Session synchron bleiben (z. B. wenn der Dozent die Session
-// beendet oder eine neue startet), ohne eine eigene Websocket-Verbindung
-// aufzubauen.
+// tatsächlichen Session synchron bleiben
 const SYNC_INTERVAL_MS = 8000;
 
 interface HeaderSessionData {
@@ -26,11 +24,25 @@ interface HeaderSessionData {
   code: string;
 }
 
-export default function NavigationPage() {
+interface NavigationPageProps {
+  isDozent?: boolean;
+  onBack?: () => void;
+}
+
+export default function NavigationPage({
+  isDozent = false,
+  onBack,
+}: NavigationPageProps) {
   const [isContentScrolling, setIsContentScrolling] = useState(false);
   const scrollEndTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [headerData, setHeaderData] = useState<HeaderSessionData | null>(null);
   const [showQrCode, setShowQrCode] = useState(false);
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Prüft flexibel, ob wir uns aktuell in der Fragenansicht befinden
+  const isQuestionsView = location.pathname.endsWith("questions");
 
   useEffect(() => {
     let cancelled = false;
@@ -90,31 +102,64 @@ export default function NavigationPage() {
     };
   }, []);
 
+  // Archiv-Tab für Dozenten ausblenden
+  const visibleTabs = TABS.filter(
+    (tab) => !(isDozent && tab.id === "archiv")
+  );
+
   return (
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white">
       <header className="shrink-0 border-b border-gray-200 bg-white px-5 pb-0 pt-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold tracking-tight text-gray-900">
-              {headerData?.veranstaltungName ?? "MME Blockkurs"}
-            </h1>
-            <p className="mt-0.5 truncate text-sm text-gray-500">{headerData?.sessionName ?? "Keine aktive Sitzung"}</p>
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Zurück-Button für Dozenten */}
+            {isDozent && (
+              <button
+                onClick={onBack ?? (() => navigate(ROUTES.DOZENT_DASHBOARD))}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                title="Zurück"
+              >
+                <span className="text-lg font-bold leading-none">‹</span>
+              </button>
+            )}
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold tracking-tight text-gray-900">
+                {headerData?.veranstaltungName ?? "MME Blockkurs"}
+              </h1>
+              <p className="mt-0.5 truncate text-sm text-gray-500">
+                {headerData?.sessionName ?? "Keine aktive Sitzung"}
+              </p>
+            </div>
           </div>
 
-          {headerData && (
-            <button
-              type="button"
-              onClick={() => setShowQrCode(true)}
-              className="flex shrink-0 items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-sm font-semibold text-pink-600 transition hover:bg-pink-200"
-            >
-              <QrCode className="h-4 w-4" aria-hidden />
-              {headerData.code}
-            </button>
-          )}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* "Fragen bearbeiten" Button – nur sichtbar für Dozenten in der Fragenansicht */}
+            {isDozent && isQuestionsView && (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-questions-edit"));
+                }}
+                className="rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors"
+              >
+                Fragen bearbeiten
+              </button>
+            )}
+
+            {headerData && (
+              <button
+                type="button"
+                onClick={() => setShowQrCode(true)}
+                className="flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-sm font-semibold text-pink-600 transition hover:bg-pink-200"
+              >
+                <QrCode className="h-4 w-4" aria-hidden />
+                {headerData.code}
+              </button>
+            )}
+          </div>
         </div>
 
         <nav aria-label="Bereiche" className="mt-5 flex justify-center space-x-10">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <NavLink
               key={tab.id}
               to={tab.path}

@@ -59,7 +59,7 @@ export default function SessionDetailPage() {
             {loadState === "loading" && <p className="text-sm text-gray-500">Lädt...</p>}
 
             {loadState === "loaded" && session && (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h1 className="text-lg font-bold text-gray-900">{session.name}</h1>
@@ -104,7 +104,21 @@ export default function SessionDetailPage() {
                   </Button>
                 )}
 
-                <p className="text-sm text-gray-500">Live-Ansicht mit Fragen &amp; Umfragen folgt in Issue #16.</p>
+                {/* Live-Ansicht / Moderation Integration */}
+                <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Live-Ansicht</h3>
+                    <p className="text-sm text-gray-500">Öffne die Live-Ansicht mit Fragen &amp; Umfragen</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigate(`/dozent/sessions/${sessionId}/live`);
+                    }}
+                    className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700"
+                  >
+                    Moderation öffnen
+                  </button>
+                </div>
               </div>
             )}
           </>
