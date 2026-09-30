@@ -1,6 +1,7 @@
 import { Role } from "./role";
 
 const SESSION_STORAGE_KEY = "raise.session";
+const STUDENT_TOKEN_KEY = "raise.studentToken";
 
 export interface StoredSession {
   role: Role;
@@ -24,4 +25,18 @@ export function setStoredSession(session: StoredSession) {
 
 export function clearStoredSession() {
   localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+// erzeugt einen anonymen token für abstimmungen und speichert ihn im browser
+export function getStudentToken(): string {
+  const vorhandenerToken = localStorage.getItem(STUDENT_TOKEN_KEY);
+
+  if (vorhandenerToken) {
+    return vorhandenerToken;
+  }
+
+  const neuerToken = crypto.randomUUID();
+  localStorage.setItem(STUDENT_TOKEN_KEY, neuerToken);
+
+  return neuerToken;
 }
