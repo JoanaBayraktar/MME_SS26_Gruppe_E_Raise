@@ -6,9 +6,15 @@ import {
   useRef,
   useState,
 } from "react";
-import { ActiveUmfrageDto, getJson, SessionByCodeDto } from "../../lib/api";
+import {
+  ActiveUmfrageDto,
+  ApiError,
+  getJson,
+  postJson,
+  SessionByCodeDto,
+} from "../../lib/api";
 import { ROLE } from "../../lib/role";
-import { getStoredSession } from "../../lib/session";
+import { getStoredSession, getStudentToken } from "../../lib/session";
 
 const REFRESH_INTERVAL_MS = 5000;
 
@@ -18,6 +24,10 @@ export default function Umfrage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
+  const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voteMessage, setVoteMessage] = useState<string | null>(null);
+  const [hasVoted, setHasVoted] = useState(false);
 
   // lädt die aktuell aktive umfrage für die beigetretene session
   const loadUmfrage = useCallback(async (showRefreshing = false) => {
@@ -78,6 +88,55 @@ export default function Umfrage() {
 
     touchStartY.current = null;
     setPullDistance(0);
+  };
+
+  // wählt je nach umfragetyp eine oder mehrere optionen aus
+  const handleOptionClick = (optionId: number) => {
+    if (hasVoted) return;
+
+    if (umfrage?.typ === "MULTIPLE_CHOICE") {
+      setSelectedOptionIds((current) =>
+        current.includes(optionId)
+          ? current.filter((id) => id !== optionId)
+          : [...current, optionId],
+      );
+      return;
+    }
+
+    setSelectedOptionIds([optionId]);
+  };
+
+  // sendet die ausgewählten antworten an das backend
+  const handleVote = async () => {
+    if (!umfrage || selectedOptionIds.length === 0 || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setVoteMessage(null);
+
+    try {
+      const result = await postJson<{ message: string }>(
+        `/api/umfragen/${umfrage.id}/vote`,
+        {
+          optionIds: selectedOptionIds,
+          studentToken: getStudentToken(),
+        },
+      );
+
+      setHasVoted(true);
+      setVoteMessage(result.message);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setVoteMessage(error.message);
+
+        if (error.status === 409) {
+          setHasVoted(true);
+        }
+      } else {
+        setVoteMessage("Die Stimme konnte nicht abgegeben werden.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -149,6 +208,48 @@ export default function Umfrage() {
       <h2 className="mt-2 text-lg font-bold text-gray-900">
         {umfrage.frageText}
       </h2>
+      <h2 className="mt-2 text-lg font-bold text-gray-900">
+        {umfrage.frageText}
+      </h2>
+
+      <div className="mt-5 space-y-3">
+        {umfrage.antwortoptionen.map((option) => {
+          const isSelected = selectedOptionIds.includes(option.id);
+
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => handleOptionClick(option.id)}
+              disabled={hasVoted}
+              className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
+                isSelected
+                  ? "border-pink-500 bg-pink-50 text-pink-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {option.text}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleVote()}
+        disabled={selectedOptionIds.length === 0 || isSubmitting || hasVoted}
+        className="mt-5 w-full rounded-xl bg-pink-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        {isSubmitting
+          ? "Wird abgestimmt..."
+          : hasVoted
+            ? "Bereits abgestimmt"
+            : "Abstimmen"}
+      </button>
+
+      {voteMessage && (
+        <p className="mt-4 text-center text-sm text-gray-600">{voteMessage}</p>
+      )}
     </div>
   );
 }
