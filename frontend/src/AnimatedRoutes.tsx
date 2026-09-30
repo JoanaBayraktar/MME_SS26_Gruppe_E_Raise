@@ -15,8 +15,10 @@ import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AccountPage from "./pages/AccountPage";
-import SessionEndPage from "./pages/sessionEndPage"; // <-- Newly added page import
+import SessionEndPage from "./pages/sessionEndPage";
 import { ROUTES } from "./routes";
+import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
+import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
 import NavigationPage from "./pages/NavigationPage";
 import Archiv from "./pages/archiv/Archiv";
 import Questions from "./pages/questions/questions";
@@ -52,6 +54,7 @@ function DozentLiveLayout() {
 export function AnimatedRoutes() {
   return (
     <Routes>
+      {/* Öffentliche & Auth-Routen */}
       <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
       <Route path={ROUTES.JOIN} element={<JoinPage />} />
       <Route path={ROUTES.JOIN_QR} element={<QrScannerPage />} />
@@ -59,14 +62,15 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+
+      {/* Dozenten Dashboard & Sessions */}
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
         <Route path=":sessionId" element={<SessionDetailPage />} />
       </Route>
-      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
-      
-      {/* Dozenten Live-Ansicht mit dynamischem Wrapper */}
+
+      {/* Dozenten Live-Ansicht mit dynamischem Wrapper und Nested Routes */}
       <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/live`} element={<DozentLiveLayout />}>
         <Route index element={<Navigate to="questions" replace />} />
         <Route path="questions" element={<Questions />} />
@@ -74,17 +78,29 @@ export function AnimatedRoutes() {
         <Route path="archiv" element={<Archiv />} />
       </Route>
 
-      {/* Session-Ended Summary Page Route */}
+      {/* Session-Ended Summary Page Routen */}
       <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/ended`} element={<SessionEndPage />} />
       <Route path={ROUTES.SESSION_ENDED} element={<SessionEndPage />} />
 
+      {/* Veranstaltungen & Details */}
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
+      <Route path={`${ROUTES.DOZENT_VERANSTALTUNGEN}/:veranstaltungId`} element={<VeranstaltungDetailPage />} />
+
+      {/* Sonstiges */}
       <Route
         path={ROUTES.DOZENT_ARCHIV}
-        element={<PlaceholderPage title="Archiv" issueNumber={27} backTo={ROUTES.DOZENT_DASHBOARD} />}
+        element={
+          <PlaceholderPage
+            title="Archiv"
+            issueNumber={27}
+            backTo={ROUTES.DOZENT_DASHBOARD}
+          />
+        }
       />
       <Route path={ROUTES.DOZENT_ACCOUNT} element={<AccountPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
+
+      {/* Allgemeine Navigation (falls benötigt) */}
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
         <Route path="questions" element={<Questions />} />
         <Route path="umfrage" element={<Umfrage />} />

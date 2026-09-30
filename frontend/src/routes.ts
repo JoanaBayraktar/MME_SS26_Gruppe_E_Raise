@@ -13,6 +13,7 @@ export const ROUTES = {
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
   SESSION_ENDED: "/session-ended", // General fallback or active session ended route
+  DOZENT_VERANSTALTUNGEN: "/dozent/veranstaltungen",
   DESIGN_SYSTEM: "/design-system",
   NAVIGATION: "/navigation",
   ARCHIV: "/navigation/archiv",
@@ -63,6 +64,13 @@ function isSessionLiveRoute(pathname: string): boolean {
 // Prüft, ob eine Route die Beendet-Ansicht einer Session ist ("/dozent/sessions/123/ended...")
 function isSessionEndedRoute(pathname: string): boolean {
   return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/ended");
+} // <-- Hier wurde die Klammer korrigiert!
+
+// Baut den Link zur jeweiligen Veranstaltung zusammen
+export function buildVeranstaltungDetailPath(
+  veranstaltungId: number,
+): string {
+  return `${ROUTES.DOZENT_VERANSTALTUNGEN}/${veranstaltungId}`;
 }
 
 // Detailseite einer einzelnen Session ("/dozent/sessions/123") – dynamisch,
