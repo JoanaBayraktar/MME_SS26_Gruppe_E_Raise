@@ -274,55 +274,55 @@ veranstaltungenRouter.post("/", async (req, res) => {
     name: veranstaltung.name,
     kuerzel: veranstaltung.kuerzel,
   });
+});
 
-  veranstaltungenRouter.delete("/:id/dozenten/:dozentId", async (req, res) => {
-    if (!req.session.dozentId) {
-      return res.status(401).json({
-        message: "Bitte melde dich als Dozent:in an.",
-      });
-    }
-
-    const veranstaltungId = Number(req.params.id);
-    const dozentId = Number(req.params.dozentId);
-
-    const veranstaltung = await prisma.veranstaltung.findFirst({
-      where: {
-        id: veranstaltungId,
-        dozentId: req.session.dozentId,
-      },
+veranstaltungenRouter.delete("/:id/dozenten/:dozentId", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({
+      message: "Bitte melde dich als Dozent:in an.",
     });
+  }
 
-    if (!veranstaltung) {
-      return res.status(404).json({
-        message:
-          "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
-      });
-    }
+  const veranstaltungId = Number(req.params.id);
+  const dozentId = Number(req.params.dozentId);
 
-    const verknuepfung = await prisma.veranstaltungDozent.findUnique({
-      where: {
-        veranstaltungId_dozentId: {
-          veranstaltungId,
-          dozentId,
-        },
-      },
-    });
-
-    if (!verknuepfung) {
-      return res.status(404).json({
-        message: "Diese Verknüpfung existiert nicht.",
-      });
-    }
-
-    await prisma.veranstaltungDozent.delete({
-      where: {
-        veranstaltungId_dozentId: {
-          veranstaltungId,
-          dozentId,
-        },
-      },
-    });
-
-    res.status(204).end();
+  const veranstaltung = await prisma.veranstaltung.findFirst({
+    where: {
+      id: veranstaltungId,
+      dozentId: req.session.dozentId,
+    },
   });
+
+  if (!veranstaltung) {
+    return res.status(404).json({
+      message:
+        "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
+    });
+  }
+
+  const verknuepfung = await prisma.veranstaltungDozent.findUnique({
+    where: {
+      veranstaltungId_dozentId: {
+        veranstaltungId,
+        dozentId,
+      },
+    },
+  });
+
+  if (!verknuepfung) {
+    return res.status(404).json({
+      message: "Diese Verknüpfung existiert nicht.",
+    });
+  }
+
+  await prisma.veranstaltungDozent.delete({
+    where: {
+      veranstaltungId_dozentId: {
+        veranstaltungId,
+        dozentId,
+      },
+    },
+  });
+
+  res.status(204).end();
 });
