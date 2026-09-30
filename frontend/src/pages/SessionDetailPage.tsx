@@ -15,6 +15,7 @@ export default function SessionDetailPage() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
     getJson<SessionDetailDto>(`/api/sessions/${sessionId}`)
@@ -49,69 +50,90 @@ export default function SessionDetailPage() {
   };
 
   return (
-    <Modal className="max-w-lg p-8" onClose={() => navigate(ROUTES.DOZENT_SESSIONS)}>
-      {() => (
-        <>
-          {loadState === "error" && <Alert tone="error">Konnte Session nicht laden.</Alert>}
-          {loadState === "not-found" && <Alert tone="error">Diese Session existiert nicht.</Alert>}
-          {loadState === "loading" && <p className="text-sm text-gray-500">Lädt...</p>}
+    <>
+      <Modal className="max-w-lg p-8" onClose={() => navigate(ROUTES.DOZENT_SESSIONS)}>
+        {() => (
+          <>
+            {loadState === "error" && <Alert tone="error">Konnte Session nicht laden.</Alert>}
+            {loadState === "not-found" && <Alert tone="error">Diese Session existiert nicht.</Alert>}
+            {loadState === "loading" && <p className="text-sm text-gray-500">Lädt...</p>}
 
-          {loadState === "loaded" && session && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">{session.name}</h1>
-                  <p className="mt-1 text-sm text-gray-500">{session.veranstaltungName}</p>
-                </div>
-                <Badge tone={SESSION_STATUS_TONE[session.status]}>{SESSION_STATUS_LABEL[session.status]}</Badge>
-              </div>
-
-              <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Datum</dt>
-                  <dd className="mt-1 text-gray-900">{formatDatum(session.datum)}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Von</dt>
-                  <dd className="mt-1 text-gray-900">{formatUhrzeit(session.startZeit)}</dd>
-                </div>
-                {session.endZeit && (
+            {loadState === "loaded" && session && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Bis</dt>
-                    <dd className="mt-1 text-gray-900">{formatUhrzeit(session.endZeit)}</dd>
+                    <h1 className="text-lg font-bold text-gray-900">{session.name}</h1>
+                    <p className="mt-1 text-sm text-gray-500">{session.veranstaltungName}</p>
                   </div>
+                  <Badge tone={SESSION_STATUS_TONE[session.status]}>{SESSION_STATUS_LABEL[session.status]}</Badge>
+                </div>
+
+                <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Datum</dt>
+                    <dd className="mt-1 text-gray-900">{formatDatum(session.datum)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Von</dt>
+                    <dd className="mt-1 text-gray-900">{formatUhrzeit(session.startZeit)}</dd>
+                  </div>
+                  {session.endZeit && (
+                    <div>
+                      <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Bis</dt>
+                      <dd className="mt-1 text-gray-900">{formatUhrzeit(session.endZeit)}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                <div className="rounded-xl bg-gray-50 px-4 py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Beitritts-Code</p>
+                  <p className="mt-1 text-2xl font-bold tracking-widest text-brand">{session.code}</p>
+                </div>
+
+                {statusError && <Alert tone="error">{statusError}</Alert>}
+
+                {!session.autoStart && session.status === "GEPLANT" && (
+                  <Button className="w-auto px-4" disabled={isChangingStatus} onClick={() => changeStatus("LAUFEND")}>
+                    {isChangingStatus ? "Wird gestartet..." : "Jetzt starten"}
+                  </Button>
                 )}
-              </dl>
 
-              <div className="rounded-xl bg-gray-50 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Beitritts-Code</p>
-                <p className="mt-1 text-2xl font-bold tracking-widest text-brand">{session.code}</p>
+                {!session.autoStart && session.status === "LAUFEND" && (
+                  <Button className="w-auto px-4" disabled={isChangingStatus} onClick={() => setConfirmEnd(true)}>
+                    {isChangingStatus ? "Wird beendet..." : "Beenden"}
+                  </Button>
+                )}
+
+                <p className="text-sm text-gray-500">Live-Ansicht mit Fragen &amp; Umfragen folgt in Issue #16.</p>
               </div>
+            )}
+          </>
+        )}
+      </Modal>
 
-              {statusError && <Alert tone="error">{statusError}</Alert>}
-
-              {!session.autoStart && session.status === "GEPLANT" && (
-                <Button className="w-auto px-4" disabled={isChangingStatus} onClick={() => changeStatus("LAUFEND")}>
-                  {isChangingStatus ? "Wird gestartet..." : "Jetzt starten"}
-                </Button>
-              )}
-
-              {!session.autoStart && session.status === "LAUFEND" && (
+      {confirmEnd && (
+        <Modal className="max-w-sm p-6" onClose={() => setConfirmEnd(false)}>
+          {(close) => (
+            <>
+              <h2 className="text-lg font-bold text-gray-900">Session beenden?</h2>
+              <p className="mt-2 text-sm text-gray-500">Die Session lässt sich danach nicht mehr fortsetzen.</p>
+              <div className="mt-6 flex gap-3">
                 <Button
-                  variant="outline"
-                  className="w-auto px-4"
-                  disabled={isChangingStatus}
-                  onClick={() => changeStatus("BEENDET")}
+                  onClick={() => {
+                    close();
+                    void changeStatus("BEENDET");
+                  }}
                 >
-                  {isChangingStatus ? "Wird beendet..." : "Beenden"}
+                  Beenden
                 </Button>
-              )}
-
-              <p className="text-sm text-gray-500">Live-Ansicht mit Fragen &amp; Umfragen folgt in Issue #16.</p>
-            </div>
+                <Button variant="outline" onClick={close}>
+                  Abbrechen
+                </Button>
+              </div>
+            </>
           )}
-        </>
+        </Modal>
       )}
-    </Modal>
+    </>
   );
 }
