@@ -42,6 +42,10 @@ export default function OnboardingPage() {
     navigate(ROLE_TARGET[role]);
   };
 
+  const handleNavigation = () => {
+    navigate(ROUTES.NAVIGATION);
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-white px-6 text-center">
       <div>
@@ -54,6 +58,10 @@ export default function OnboardingPage() {
 
         <Button className="mt-4" onClick={handleWeiter}>
           Weiter
+        </Button>
+
+        <Button className="mt-4" onClick={handleNavigation}>
+          fragen seite - DELETE LATER
         </Button>
 
         <p

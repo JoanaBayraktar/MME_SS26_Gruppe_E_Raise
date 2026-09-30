@@ -123,24 +123,27 @@ export default function SessionsPage() {
       {sessions.length > 0 && (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <Select
-              aria-label="Nach Veranstaltung filtern"
-              value={veranstaltungFilter}
-              onChange={(event) => setVeranstaltungFilter(event.target.value)}
-              className="w-auto"
-            >
-              <option value={ALLE_VERANSTALTUNGEN}>Alle Veranstaltungen</option>
-              {veranstaltungen.map((veranstaltung) => (
-                <option key={veranstaltung.id} value={veranstaltung.id}>
-                  {veranstaltung.name}
-                </option>
-              ))}
-            </Select>
+            <div className="w-56 shrink-0">
+              <Select
+                aria-label="Nach Veranstaltung filtern"
+                value={veranstaltungFilter}
+                onChange={(event) => setVeranstaltungFilter(event.target.value)}
+              >
+                <option value={ALLE_VERANSTALTUNGEN}>Alle Veranstaltungen</option>
+                {veranstaltungen.map((veranstaltung) => (
+                  <option key={veranstaltung.id} value={veranstaltung.id}>
+                    {veranstaltung.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <SegmentedControl
               aria-label="Nach Status filtern"
               options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
               onChange={setStatusFilter}
+              className="shrink-0"
+              sizeToContent
             />
           </div>
 

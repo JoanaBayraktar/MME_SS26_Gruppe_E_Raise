@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import StyleGuide from "./StyleGuide";
 import OnboardingPage from "./pages/OnboardingPage";
 import JoinPage from "./pages/JoinPage";
@@ -16,12 +16,14 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import { ROUTES } from "./routes";
 import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
 import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
+import NavigationPage from "./pages/NavigationPage";
+import Archiv from "./pages/archiv/Archiv";
+import Questions from "./pages/questions/questions";
+import Umfrage from "./pages/umfrage/umfrage";
 
 export function AnimatedRoutes() {
-  const location = useViewTransitionLocation();
-
   return (
-    <Routes location={location}>
+    <Routes>
       <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
       <Route path={ROUTES.JOIN} element={<JoinPage />} />
       <Route path={ROUTES.JOIN_QR} element={<QrScannerPage />} />
@@ -32,6 +34,7 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
+        <Route path=":sessionId" element={<SessionDetailPage />} />
       </Route>
       <Route
         path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`}
@@ -66,6 +69,11 @@ export function AnimatedRoutes() {
         }
       />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
+      <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
+        <Route path={ROUTES.QUESTIONS} element={<Questions />} />
+        <Route path={ROUTES.UMFRAGE} element={<Umfrage />} />
+        <Route path={ROUTES.ARCHIV} element={<Archiv />} />
+      </Route>
     </Routes>
   );
 }

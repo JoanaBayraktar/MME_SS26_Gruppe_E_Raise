@@ -14,6 +14,10 @@ export const ROUTES = {
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
   DOZENT_VERANSTALTUNGEN: "/dozent/veranstaltungen",
   DESIGN_SYSTEM: "/design-system",
+  NAVIGATION: "/navigation",
+  ARCHIV: "/navigation/archiv",
+  QUESTIONS: "/navigation/questions",
+  UMFRAGE: "/navigation/umfrage",
 } as const;
 
 // Tiefe jeder Route in der Navigationshierarchie (Onboarding = Wurzel).
@@ -59,7 +63,6 @@ function isSessionDetailRoute(pathname: string): boolean {
 }
 
 export function getRouteDepth(pathname: string): number | undefined {
-  if (isSessionDetailRoute(pathname)) return ROUTE_DEPTH[ROUTES.DOZENT_SESSION_NEW];
   return ROUTE_DEPTH[pathname];
 }
 
@@ -75,17 +78,16 @@ const DASHBOARD_SHELL_ROUTES: Set<string> = new Set([
 ]);
 
 export function sharesLayoutShell(pathnameA: string, pathnameB: string): boolean {
-  const isShellA = DASHBOARD_SHELL_ROUTES.has(pathnameA) || isSessionDetailRoute(pathnameA);
-  const isShellB = DASHBOARD_SHELL_ROUTES.has(pathnameB) || isSessionDetailRoute(pathnameB);
-  return isShellA && isShellB;
+  return DASHBOARD_SHELL_ROUTES.has(pathnameA) && DASHBOARD_SHELL_ROUTES.has(pathnameB);
 }
 
 // Routen, die sich als Overlay (Backdrop + zentrierte Karte) über dem
 // Hintergrund öffnen, statt als eigener Screen. Ein seitliches Reinschieben
 // wie bei echten Screens würde hier komisch aussehen – stattdessen blendet
-// die Karte sanft ein/aus.
+// die Karte sanft ein/aus. Die aufrufende Seite bleibt dabei gemountet
+// (siehe Outlet in SessionsPage), das Overlay animiert sich selbst per CSS.
 const MODAL_ROUTES: Set<string> = new Set([ROUTES.DOZENT_SESSION_NEW]);
 
 export function isModalRoute(pathname: string): boolean {
-  return MODAL_ROUTES.has(pathname);
+  return MODAL_ROUTES.has(pathname) || isSessionDetailRoute(pathname);
 }
