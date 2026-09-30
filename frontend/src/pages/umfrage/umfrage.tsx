@@ -145,7 +145,6 @@ export default function Umfrage() {
       onTouchEnd={handleTouchEnd}
       className="rounded-2xl bg-white p-6"
     >
-      {" "}
       <p className="text-sm font-medium text-pink-600">Aktive Umfrage</p>
       <h2 className="mt-2 text-lg font-bold text-gray-900">
         {umfrage.frageText}
