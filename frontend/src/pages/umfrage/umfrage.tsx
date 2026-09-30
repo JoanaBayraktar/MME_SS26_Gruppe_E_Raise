@@ -12,6 +12,7 @@ import {
   getJson,
   postJson,
   SessionByCodeDto,
+  UmfrageErgebnisDto,
 } from "../../lib/api";
 import { ROLE } from "../../lib/role";
 import { getStoredSession, getStudentToken } from "../../lib/session";
@@ -28,6 +29,7 @@ export default function Umfrage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteMessage, setVoteMessage] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
+  const [ergebnis, setErgebnis] = useState<UmfrageErgebnisDto | null>(null);
 
   // lädt die aktuell aktive umfrage für die beigetretene session
   const loadUmfrage = useCallback(async (showRefreshing = false) => {
@@ -60,6 +62,19 @@ export default function Umfrage() {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  }, []);
+
+  // lädt die aktuellen ergebnisse der umfrage
+  const loadErgebnis = useCallback(async (umfrageId: number) => {
+    try {
+      const data = await getJson<UmfrageErgebnisDto>(
+        `/api/umfragen/${umfrageId}/results`,
+      );
+
+      setErgebnis(data);
+    } catch {
+      setErgebnis(null);
     }
   }, []);
 
@@ -127,6 +142,7 @@ export default function Umfrage() {
 
       setHasVoted(true);
       setVoteMessage(result.message);
+      await loadErgebnis(umfrage.id);
     } catch (error) {
       if (error instanceof ApiError) {
         setVoteMessage(error.message);
@@ -158,6 +174,22 @@ export default function Umfrage() {
     setSelectedOptionIds([]);
     setVoteMessage(null);
   }, [umfrage?.id]);
+
+  // aktualisiert die ergebnisse regelmäßig nach der abstimmung
+  useEffect(() => {
+    if (!umfrage || !hasVoted) {
+      setErgebnis(null);
+      return;
+    }
+
+    void loadErgebnis(umfrage.id);
+
+    const interval = setInterval(() => {
+      void loadErgebnis(umfrage.id);
+    }, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [hasVoted, loadErgebnis, umfrage]);
 
   if (isLoading) {
     return (
