@@ -175,7 +175,7 @@ export default function DozentDashboardPage() {
 
             <Button
               variant="primary"
-              className="flex w-auto items-center gap-2 px-4"
+              className="flex !w-auto items-center gap-2 px-4"
               onClick={() =>
                 navigate(`${ROUTES.DOZENT_SESSIONS}/${activeSession.id}`)
               }
