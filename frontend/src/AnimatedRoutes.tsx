@@ -7,7 +7,6 @@ import QrScannerPage from "./pages/QrScannerPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import SessionPlaceholderPage from "./pages/SessionPlaceholderPage";
 import DozentDashboardPage from "./pages/DozentDashboardPage";
 import SessionsPage from "./pages/SessionsPage";
 import SessionDetailPage from "./pages/SessionDetailPage";
@@ -60,7 +59,6 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
       <Route path={ROUTES.JOIN} element={<JoinPage />} />
       <Route path={ROUTES.JOIN_QR} element={<QrScannerPage />} />
-      <Route path={ROUTES.SESSION} element={<SessionPlaceholderPage />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
@@ -104,8 +102,9 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_ACCOUNT} element={<AccountPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
 
-      {/* Fallback Navigation Route */}
+      {/* Studentische Session-Ansicht (Fragen/Umfrage/Archiv) nach Beitritt oder Resume */}
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
+        <Route index element={<Navigate to="questions" replace />} />
         <Route path="questions" element={<Questions />} />
         <Route path="umfrage" element={<Umfrage />} />
         <Route path="archiv" element={<Archiv />} />

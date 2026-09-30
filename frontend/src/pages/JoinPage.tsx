@@ -54,7 +54,7 @@ export default function JoinPage() {
       anonymous: values.anonymous,
       sessionCode: code,
     });
-    navigate(ROUTES.SESSION);
+    navigate(ROUTES.NAVIGATION);
   };
 
   return (
