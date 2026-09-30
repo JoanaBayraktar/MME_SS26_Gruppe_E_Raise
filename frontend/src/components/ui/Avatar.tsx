@@ -1,7 +1,7 @@
 type AvatarVariant = "brand" | "neutral";
 
 interface AvatarProps {
-  name: string;
+  name?: string; // Optional gemacht, falls Daten noch laden
   variant?: AvatarVariant;
   className?: string;
 }
@@ -11,7 +11,8 @@ const variantClasses: Record<AvatarVariant, string> = {
   neutral: "bg-gray-200 text-gray-600",
 };
 
-function initials(name: string) {
+function initials(name?: string) {
+  if (!name || typeof name !== "string") return "?"; // Sicherer Fallback
   const parts = name.trim().split(/\s+/);
   const first = parts[0]?.[0] ?? "";
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";

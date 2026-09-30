@@ -12,6 +12,7 @@ export const ROUTES = {
   DOZENT_ACCOUNT: "/dozent/account",
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
+  SESSION_ENDED: "/session-ended", // General fallback or active session ended route
   DOZENT_VERANSTALTUNGEN: "/dozent/veranstaltungen",
   DESIGN_SYSTEM: "/design-system",
   NAVIGATION: "/navigation",
@@ -38,23 +39,34 @@ export const ROUTE_DEPTH: Record<string, number> = {
   [ROUTES.DOZENT_ACCOUNT]: 2,
   [ROUTES.DOZENT_SESSION_NEW]: 3,
   [ROUTES.DOZENT_VERANSTALTUNG_NEW]: 3,
+  [ROUTES.SESSION_ENDED]: 3,
 };
 
 export function buildSessionDetailPath(sessionId: number | string): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}`;
 }
 
-// Neu: Hilfsfunktion für den Live-Pfad einer Dozenten-Session
+// Hilfsfunktion für den Live-Pfad einer Dozenten-Session
 export function buildSessionLivePath(sessionId: number | string): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}/live`;
+}
+
+// Hilfsfunktion für den Beendet-Pfad einer Dozenten-Session
+export function buildSessionEndedPath(sessionId: number | string): string {
+  return `${ROUTES.DOZENT_SESSIONS}/${sessionId}/ended`;
 }
 
 // Prüft, ob eine Route eine Live-Ansicht einer Session ist ("/dozent/sessions/123/live...")
 function isSessionLiveRoute(pathname: string): boolean {
   return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/live");
-} // <- Fixed: Added missing closing brace here
+}
 
-// baut den link zur jeweiligen veranstaltung zusammen
+// Prüft, ob eine Route die Beendet-Ansicht einer Session ist ("/dozent/sessions/123/ended...")
+function isSessionEndedRoute(pathname: string): boolean {
+  return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/ended");
+}
+
+// Baut den Link zur jeweiligen Veranstaltung zusammen
 export function buildVeranstaltungDetailPath(
   veranstaltungId: number,
 ): string {
@@ -69,12 +81,13 @@ function isSessionDetailRoute(pathname: string): boolean {
     pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) &&
     pathname !== ROUTES.DOZENT_SESSION_NEW &&
     !pathname.includes("/live") &&
+    !pathname.includes("/ended") &&
     /^\/\d+$/.test(pathname.slice(ROUTES.DOZENT_SESSIONS.length))
   );
 }
 
 export function getRouteDepth(pathname: string): number | undefined {
-  if (isSessionDetailRoute(pathname) || isSessionLiveRoute(pathname)) {
+  if (isSessionDetailRoute(pathname) || isSessionLiveRoute(pathname) || isSessionEndedRoute(pathname)) {
     return ROUTE_DEPTH[ROUTES.DOZENT_SESSION_NEW];
   }
   return ROUTE_DEPTH[pathname];

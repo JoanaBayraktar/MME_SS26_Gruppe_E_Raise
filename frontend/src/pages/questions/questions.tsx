@@ -210,7 +210,7 @@ export default function Questions() {
             <button
               type="button"
               onClick={() => { setIsSortOpen(!isSortOpen); setIsSlideOpen(false); setIsTopicOpen(false); }}
-              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 cursor-pointer"
             >
               <ArrowUpDown className="h-3.5 w-3.5 text-pink-600" />
               <span>{sortBy === "newest" ? "Neueste" : "Meiste Votes"}</span>
@@ -221,7 +221,7 @@ export default function Questions() {
                 <button
                   type="button"
                   onClick={() => { setSortBy("newest"); setIsSortOpen(false); }}
-                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors cursor-pointer ${
                     sortBy === "newest" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -230,7 +230,7 @@ export default function Questions() {
                 <button
                   type="button"
                   onClick={() => { setSortBy("votes"); setIsSortOpen(false); }}
-                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors cursor-pointer ${
                     sortBy === "votes" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -290,7 +290,7 @@ export default function Questions() {
                   <button 
                     type="button"
                     onClick={(e) => handleVote(question.id, e)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors cursor-pointer ${
                       question.voted 
                       ? "bg-pink-600 text-white border border-pink-600" 
                       : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
@@ -378,15 +378,15 @@ export default function Questions() {
 
       </div>
 
-      {/* Eingabefeld unten */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent pt-8 pb-4 px-4 z-30">
+      {/* Eingabefeld unten (angepasst an das linke Fenster, ignoriert rechte Sidebar) */}
+      <div className="fixed bottom-0 left-0 right-80 bg-gradient-to-t from-white via-white/90 to-transparent pt-8 pb-4 px-4 z-30">
         <div className="max-w-xl mx-auto">
           <form onSubmit={handleSubmit} className="relative pt-6">
             <div ref={slideBoxRef} className="absolute left-4 top-0 z-20">
               <button
                 type="button"
                 onClick={() => { setIsSlideOpen(!isSlideOpen); setIsTopicOpen(false); setIsSortOpen(false); }}
-                className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all 
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all cursor-pointer 
                   ${isSlideOpen ? "w-40 justify-between rounded-b-lg rounded-t-none" : "rounded-t-lg rounded-b-none"} 
                   ${isSlideOpen || slideNumber ? "bg-pink-600 text-white" : "bg-gray-100 text-gray-700"}`}
               >
@@ -412,7 +412,7 @@ export default function Questions() {
               <button
                 type="button"
                 onClick={() => { setIsTopicOpen(!isTopicOpen); setIsSlideOpen(false); setIsSortOpen(false); }}
-                className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all 
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-medium shadow-sm transition-all cursor-pointer 
                   ${isTopicOpen ? "w-52 justify-between rounded-b-lg rounded-t-none" : "rounded-t-lg rounded-b-none"}
                   ${isTopicOpen || selectedTopic ? "bg-pink-600 text-white" : "bg-gray-100 text-gray-700"}`}
               >
@@ -424,7 +424,7 @@ export default function Questions() {
                   <button
                     type="button"
                     onClick={() => { setSelectedTopic(""); setIsTopicOpen(false); }}
-                    className="w-full rounded-lg px-2 py-2 text-left text-xs bg-pink-50 text-gray-600 hover:bg-pink-100"
+                    className="w-full rounded-lg px-2 py-2 text-left text-xs bg-pink-50 text-gray-600 hover:bg-pink-100 cursor-pointer"
                   >
                     Kein Thema / Allgemein
                   </button>
@@ -433,7 +433,7 @@ export default function Questions() {
                       key={topic}
                       type="button"
                       onClick={() => { setSelectedTopic(topic); setIsTopicOpen(false); }}
-                      className="w-full truncate rounded-lg px-2 py-2 text-left text-xs font-medium bg-pink-50 text-gray-700 hover:bg-pink-100"
+                      className="w-full truncate rounded-lg px-2 py-2 text-left text-xs font-medium bg-pink-50 text-gray-700 hover:bg-pink-100 cursor-pointer"
                     >
                       {topic}
                     </button>
@@ -452,7 +452,7 @@ export default function Questions() {
                   className="flex-1 bg-transparent px-3 py-1 text-sm text-gray-800 outline-none placeholder:text-gray-400"
                 />
               </div>
-              <button type="submit" aria-label="Frage stellen" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-600 text-white shadow-sm hover:bg-pink-700">
+              <button type="submit" aria-label="Frage stellen" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-600 text-white shadow-sm hover:bg-pink-700 cursor-pointer">
                 <Send className="h-4 w-4" />
               </button>
             </div>
