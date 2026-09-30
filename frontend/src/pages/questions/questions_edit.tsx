@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, Check, Trash2, Edit2 } from "lucide-react";
+import { X, Check, Trash2 } from "lucide-react";
+import { updateQuestionStatus } from "../questions/questionsService";
 
 interface Question {
   id: number;
@@ -60,36 +61,54 @@ export default function QuestionsEdit({ questions, onClose, onUpdateQuestions }:
     }
   };
 
-  // Massenaktion: Status auf "beantwortet" setzen
-  const handleBatchMarkAsAnswered = () => {
-    const updated = enhancedQuestions.map((q) =>
-      selectedIds.includes(q.id) ? { ...q, status: "beantwortet" as const } : q
-    );
-    onUpdateQuestions(updated);
-    setSelectedIds([]);
+  // Massenaktion: Status auf "beantwortet" setzen (inkl. Backend-Sync)
+  const handleBatchMarkAsAnswered = async () => {
+    try {
+      await Promise.all(
+        selectedIds.map((id) => updateQuestionStatus(id, "beantwortet"))
+      );
+
+      const updated = enhancedQuestions.map((q) =>
+        selectedIds.includes(q.id) ? { ...q, status: "beantwortet" as const } : q
+      );
+      onUpdateQuestions(updated);
+      setSelectedIds([]);
+    } catch (error) {
+      console.error("Fehler beim Aktualisieren der Fragen im Backend:", error);
+    }
   };
 
   // Massenaktion: Löschen
-  const handleBatchDelete = () => {
-    const updated = enhancedQuestions.filter((q) => !selectedIds.includes(q.id));
-    onUpdateQuestions(updated);
-    setSelectedIds([]);
+  const handleBatchDelete = async () => {
+    try {
+      const updated = enhancedQuestions.filter((q) => !selectedIds.includes(q.id));
+      onUpdateQuestions(updated);
+      setSelectedIds([]);
+    } catch (error) {
+      console.error("Fehler beim Löschen:", error);
+    }
   };
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "gefragt":
-        return <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-600">gefragt</span>;
+        return <span className="inline-block w-24 text-center rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-600">gefragt</span>;
       case "beantwortet":
-        return <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">beantwortet</span>;
+        return <span className="inline-block w-24 text-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">beantwortet</span>;
       default:
-        return <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">neu</span>;
+        return <span className="inline-block w-24 text-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">neu</span>;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-5xl rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] flex flex-col">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-5xl rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header & Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-100">
@@ -165,6 +184,8 @@ export default function QuestionsEdit({ questions, onClose, onUpdateQuestions }:
             <tbody className="divide-y divide-gray-50 text-sm">
               {filteredQuestions.map((q) => {
                 const isSelected = selectedIds.includes(q.id);
+                const isAnswered = q.status === "beantwortet";
+
                 return (
                   <tr key={q.id} className={`hover:bg-gray-50/80 transition-colors ${isSelected ? "bg-pink-50/40" : ""}`}>
                     <td className="py-4 pl-4 pr-2">
@@ -193,20 +214,35 @@ export default function QuestionsEdit({ questions, onClose, onUpdateQuestions }:
                     <td className="py-4 pr-4 pl-2 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => {
-                            // Optional: Einzelbearbeitung triggern
+                          onClick={async () => {
+                            const nextStatus = isAnswered ? "gefragt" : "beantwortet";
+                            try {
+                              await updateQuestionStatus(q.id, nextStatus);
+                              const updated = enhancedQuestions.map((item) =>
+                                item.id === q.id ? { ...item, status: nextStatus as any } : item
+                              );
+                              onUpdateQuestions(updated);
+                            } catch (err) {
+                              console.error("Fehler beim Statuswechsel:", err);
+                            }
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors"
-                          title="Bearbeiten"
+                          className={`w-32 flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-2xs ${
+                            isAnswered 
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100" 
+                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          }`}
+                          title={isAnswered ? "Als nicht erledigt markieren" : "Als erledigt markieren"}
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <span>Erledigt</span>
+                          <Check className={`h-4 w-4 ${isAnswered ? "text-emerald-600" : "text-gray-400"}`} />
                         </button>
+
                         <button
                           onClick={() => {
                             const updated = enhancedQuestions.filter((item) => item.id !== q.id);
                             onUpdateQuestions(updated);
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 text-rose-500 hover:bg-rose-50 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-100 text-rose-500 hover:bg-rose-50 transition-colors"
                           title="Löschen"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

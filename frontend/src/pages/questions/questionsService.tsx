@@ -50,20 +50,26 @@ export interface QuestionPayload {
   slideNumber?: number;
   topic?: string;
   sessionId?: string | number;
+  status?: "neu" | "gefragt" | "beantwortet";
 }
 
 // Alle Fragen für eine bestimmte Session abrufen (gibt im Fall der Fälle immer ein Array zurück)
 export async function fetchQuestions(sessionId?: string | number, sortBy: "newest" | "votes" = "newest") {
   const activeSession = sessionId || getCurrentSessionId();
   const data = await apiRequest<any[]>(`${API_URL}?sessionId=${activeSession}&sortBy=${sortBy}`);
-  return data || [];
+  
+  // Mapping zur Sicherheit, damit das Status-Feld aus der Datenbank immer vorhanden ist
+  return (data || []).map((item: any) => ({
+    ...item,
+    status: item.status || item.tag || "gefragt",
+  }));
 }
 
 // Neue Frage an das Backend senden
 export async function sendQuestion(questionData: QuestionPayload) {
   const activeSession = questionData.sessionId || getCurrentSessionId();
 
-  return apiRequest<any>(API_URL, {
+  const saved = await apiRequest<any>(API_URL, {
     method: "POST",
     body: JSON.stringify({
       ...questionData,
@@ -71,16 +77,51 @@ export async function sendQuestion(questionData: QuestionPayload) {
       studentToken: getStudentToken(),
     }),
   });
+
+  if (saved) {
+    return {
+      ...saved,
+      status: saved.status || saved.tag || "gefragt",
+    };
+  }
+  return saved;
 }
 
 // Vote für eine spezifische Frage abgeben / umschalten
 export async function voteQuestion(questionId: number) {
-  return apiRequest<any>(`${API_URL}/${questionId}/vote`, {
+  const updated = await apiRequest<any>(`${API_URL}/${questionId}/vote`, {
     method: "POST",
     body: JSON.stringify({
       studentToken: getStudentToken(),
     }),
   });
+
+  if (updated) {
+    return {
+      ...updated,
+      status: updated.status || updated.tag || "gefragt",
+    };
+  }
+  return updated;
+}
+
+// Status einer spezifischen Frage aktualisieren (z.B. von "neu" auf "gefragt")
+export async function updateQuestionStatus(questionId: number, status: "neu" | "gefragt" | "beantwortet") {
+  const updated = await apiRequest<any>(`${API_URL}/${questionId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status,
+      studentToken: getStudentToken(),
+    }),
+  });
+
+  if (updated) {
+    return {
+      ...updated,
+      status: updated.status || status,
+    };
+  }
+  return updated;
 }
 
 // ==========================================
@@ -116,8 +157,6 @@ export async function voteComment(commentId: number) {
     }),
   });
 }
-
-// ==========================================
 
 // Backend-Aufruf von Profil
 async function fetchUserProfile() {

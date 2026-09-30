@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowUp, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
-import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion } from "../questions/questionsService";
+import { fetchQuestions, sendQuestion, determineAuthorName, voteQuestion, updateQuestionStatus } from "../questions/questionsService";
 import { SingleView } from "./singleview";
 import QuestionsEdit from "./questions_edit";
 
@@ -143,6 +143,27 @@ export default function Questions() {
     }
   };
 
+  // Funktion zum Öffnen der Frage und automatischen Status-Wechsel von "neu" zu "gefragt"
+  const handleOpenQuestion = async (question: Question) => {
+    setSelectedQuestion(question);
+
+    // Wenn der Status "neu" ist, auf "gefragt" umschalten
+    if (question.status === "neu") {
+      try {
+        // Optimistisches Update im lokalen State
+        setQuestions((current) =>
+          current.map((q) => (q.id === question.id ? { ...q, status: "gefragt" } : q))
+        );
+        setSelectedQuestion((prev) => (prev ? { ...prev, status: "gefragt" } : null));
+
+        // In der Datenbank speichern
+        await updateQuestionStatus(question.id, "gefragt");
+      } catch (error) {
+        console.error("Fehler beim Aktualisieren des Status:", error);
+      }
+    }
+  };
+
   const sortedQuestions = [...questions].sort((a, b) => {
     if (sortBy === "votes") {
       if (b.votes !== a.votes) {
@@ -153,6 +174,18 @@ export default function Questions() {
   });
 
   const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"];
+
+  const getStatusBadgeStyle = (status?: string) => {
+    switch (status) {
+      case "beantwortet":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "gefragt":
+        return "bg-pink-100 text-pink-700 border-pink-200";
+      case "neu":
+      default:
+        return "bg-amber-100 text-amber-800 border-amber-200";
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-24 animate-fade-in motion-reduce:animate-none">
@@ -200,46 +233,66 @@ export default function Questions() {
 
       {/* Fragen-Liste */}
       <div className="flex-1 space-y-4 mb-6">
-        {sortedQuestions.map((question) => (
-          <div 
-            key={question.id} 
-            onClick={() => setSelectedQuestion(question)}
-            className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
-          >
-            <div className="flex-1">
-              <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-gray-800">{question.author}</span>
-                <span>•</span>
-                <span>{question.time}</span>
-              </div>
-              <p className="mb-3 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                {question.tag && <span className="rounded-full bg-pink-50 px-2.5 py-0.5 font-medium text-pink-600 border border-pink-100">{question.tag}</span>}
-                <span className="rounded-full border border-pink-100 bg-pink-50 px-2.5 py-0.5 font-medium text-pink-600">
-                  Thema: {question.topic || "Allgemein"}
-                </span>
-                <span className="ml-auto flex items-center gap-1 text-gray-400">
-                  <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
-                </span>
-              </div>
-            </div>
+        {sortedQuestions.map((question) => {
+          const statusValue = question.status || question.tag || "gefragt";
+          return (
+            <div 
+              key={question.id} 
+              onClick={() => handleOpenQuestion(question)}
+              className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
+            >
+              <div className="flex-1">
+                <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
+                  <span className="font-semibold text-gray-800">{question.author}</span>
+                  <span>•</span>
+                  <span>{question.time}</span>
+                </div>
+                
+                <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
+                
+                {/* Status-Badge, Folie und Thema mit gelbem Hintergrund */}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+                  <span className={`rounded-full px-2.5 py-0.5 font-medium border ${getStatusBadgeStyle(statusValue)}`}>
+                    {statusValue}
+                  </span>
+                  
+                  {question.slideNumber && (
+                    <>
+                      <span>•</span>
+                      <span>Folie {question.slideNumber}</span>
+                    </>
+                  )}
 
-            <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
-              <button 
-                type="button"
-                onClick={(e) => handleVote(question.id, e)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                  question.voted 
-                  ? "bg-pink-600 text-white border border-pink-600" 
-                  : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
-                }`}
-              >
-                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-              </button>
-              <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+                  {question.topic && (
+                    <>
+                      <span>•</span>
+                      <span>{question.topic}</span>
+                    </>
+                  )}
+
+                  <span className="ml-auto flex items-center gap-1 text-gray-400">
+                    <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
+                <button 
+                  type="button"
+                  onClick={(e) => handleVote(question.id, e)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    question.voted 
+                    ? "bg-pink-600 text-white border border-pink-600" 
+                    : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                  }`}
+                >
+                  <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                </button>
+                <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Eingabefeld unten */}
@@ -328,7 +381,12 @@ export default function Questions() {
       {selectedQuestion && (
         <SingleView 
           question={selectedQuestion} 
-          onClose={() => setSelectedQuestion(null)} 
+          onClose={() => {
+            setSelectedQuestion(null);
+            fetchQuestions()
+              .then((data) => setQuestions(data))
+              .catch((err) => console.error("Fehler beim Aktualisieren der Fragen:", err));
+          }} 
         />
       )}
 

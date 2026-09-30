@@ -58,7 +58,6 @@ enum SessionStatus {
   BEENDET
 }
 
-// Umfragen laufen pro Session (Live-Umfrage während einer Vorlesung), nicht pro Veranstaltung
 model Umfrage {
   id              Int             @id @default(autoincrement()) @map("umfrage_id")
   sessionId       Int             @map("session_id")
@@ -98,16 +97,16 @@ model Abstimmung {
 }
 
 model Frage {
-  id              Int            @id @default(autoincrement()) @map("frage_id")
-  sessionId       Int            @map("session_id")
-  session         Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id              Int          @id @default(autoincrement()) @map("frage_id")
+  sessionId       Int          @map("session_id")
+  session         Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   text            String
   kapitel         String?
-  folienNr        Int?           @map("folien_nr")
-  status          FrageStatus    @default(NEU)
-  studentToken    String         @map("student_token")
-  dozentKommentar String?        @map("dozent_kommentar")
-  erstelltAm      DateTime       @default(now()) @map("erstellt_am")
+  folienNr        Int?         @map("folien_nr")
+  status          FrageStatus  @default(NEU)
+  studentToken    String       @map("student_token")
+  dozentKommentar String?      @map("dozent_kommentar")
+  erstelltAm      DateTime     @default(now()) @map("erstellt_am")
   kommentare      Kommentar[]
   upvotes         Upvote[]
   archivEintrag   ArchivEintrag?
@@ -123,15 +122,27 @@ enum FrageStatus {
 }
 
 model Kommentar {
-  id           Int      @id @default(autoincrement()) @map("kommentar_id")
-  frageId      Int      @map("frage_id")
-  frage        Frage    @relation(fields: [frageId], references: [id], onDelete: Cascade)
+  id           Int               @id @default(autoincrement()) @map("kommentar_id")
+  frageId      Int               @map("frage_id")
+  frage        Frage             @relation(fields: [frageId], references: [id], onDelete: Cascade)
   text         String
-  isDozent     Boolean  @default(false) @map("is_dozent")
-  studentToken String?  @map("student_token")
-  erstelltAm   DateTime @default(now()) @map("erstellt_am")
+  isDozent     Boolean           @default(false) @map("is_dozent")
+  studentToken String?           @map("student_token")
+  erstelltAm   DateTime          @default(now()) @map("erstellt_am")
+  upvotes      KommentarUpvote[]
 
   @@map("kommentar")
+}
+
+model KommentarUpvote {
+  id           Int       @id @default(autoincrement()) @map("kommentar_upvote_id")
+  kommentarId  Int       @map("kommentar_id")
+  kommentar    Kommentar @relation(fields: [kommentarId], references: [id], onDelete: Cascade)
+  studentToken String    @map("student_token")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+
+  @@unique([kommentarId, studentToken])
+  @@map("kommentar_upvote")
 }
 
 model Upvote {
