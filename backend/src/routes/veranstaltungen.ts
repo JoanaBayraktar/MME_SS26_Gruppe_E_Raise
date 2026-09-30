@@ -8,7 +8,10 @@ const createVeranstaltungSchema = z.object({
 });
 
 const addDozentSchema = z.object({
-  kennung: z.string().trim().min(1, "Bitte gib eine Dozenten-Kennung oder E-Mail ein."),
+  kennung: z
+    .string()
+    .trim()
+    .min(1, "Bitte gib eine Dozenten-Kennung oder E-Mail ein."),
 });
 
 export const veranstaltungenRouter = Router();
@@ -16,15 +19,20 @@ export const veranstaltungenRouter = Router();
 // Status der Veranstaltung ergibt sich aus ihren Sessions: läuft gerade eine,
 // zählt die ganze Veranstaltung als "läuft"; sonst "geplant", solange noch
 // etwas ansteht; erst wenn alle Sessions beendet sind, ist sie "beendet".
-function computeVeranstaltungStatus(sessions: { status: string }[]): "LAUFEND" | "GEPLANT" | "BEENDET" {
+function computeVeranstaltungStatus(
+  sessions: { status: string }[],
+): "LAUFEND" | "GEPLANT" | "BEENDET" {
   if (sessions.some((s) => s.status === "LAUFEND")) return "LAUFEND";
-  if (sessions.length === 0 || sessions.some((s) => s.status === "GEPLANT")) return "GEPLANT";
+  if (sessions.length === 0 || sessions.some((s) => s.status === "GEPLANT"))
+    return "GEPLANT";
   return "BEENDET";
 }
 
 veranstaltungenRouter.get("/:id/dozenten", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const id = Number(req.params.id);
@@ -48,7 +56,9 @@ veranstaltungenRouter.get("/:id/dozenten", async (req, res) => {
   });
 
   if (!veranstaltung) {
-    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
+    return res
+      .status(404)
+      .json({ message: "Diese Veranstaltung existiert nicht." });
   }
 
   res.json([
@@ -71,7 +81,9 @@ veranstaltungenRouter.get("/:id/dozenten", async (req, res) => {
 
 veranstaltungenRouter.post("/:id/dozenten", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const id = Number(req.params.id);
@@ -93,20 +105,22 @@ veranstaltungenRouter.post("/:id/dozenten", async (req, res) => {
 
   if (!veranstaltung) {
     return res.status(404).json({
-      message: "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
+      message:
+        "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
     });
   }
 
   const kennung = parsed.data.kennung;
   const dozentId = Number(kennung);
 
-  const dozent = Number.isInteger(dozentId) && dozentId > 0
-    ? await prisma.dozent.findUnique({
-        where: { id: dozentId },
-      })
-    : await prisma.dozent.findUnique({
-        where: { email: kennung },
-      });
+  const dozent =
+    Number.isInteger(dozentId) && dozentId > 0
+      ? await prisma.dozent.findUnique({
+          where: { id: dozentId },
+        })
+      : await prisma.dozent.findUnique({
+          where: { email: kennung },
+        });
 
   if (!dozent) {
     return res.status(404).json({
@@ -153,7 +167,9 @@ veranstaltungenRouter.post("/:id/dozenten", async (req, res) => {
 
 veranstaltungenRouter.get("/", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const veranstaltungen = await prisma.veranstaltung.findMany({
@@ -169,13 +185,15 @@ veranstaltungenRouter.get("/", async (req, res) => {
       kuerzel: v.kuerzel,
       sessionCount: v.sessions.length,
       status: computeVeranstaltungStatus(v.sessions),
-    }))
+    })),
   );
 });
 
 veranstaltungenRouter.get("/:id", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const id = Number(req.params.id);
@@ -185,7 +203,9 @@ veranstaltungenRouter.get("/:id", async (req, res) => {
   });
 
   if (!veranstaltung) {
-    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
+    return res
+      .status(404)
+      .json({ message: "Diese Veranstaltung existiert nicht." });
   }
 
   res.json({
@@ -203,7 +223,9 @@ veranstaltungenRouter.get("/:id", async (req, res) => {
 
 veranstaltungenRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const parsed = createVeranstaltungSchema.safeParse(req.body);
@@ -238,5 +260,56 @@ veranstaltungenRouter.post("/", async (req, res) => {
     id: veranstaltung.id,
     name: veranstaltung.name,
     kuerzel: veranstaltung.kuerzel,
+  });
+
+  veranstaltungenRouter.delete("/:id/dozenten/:dozentId", async (req, res) => {
+    if (!req.session.dozentId) {
+      return res.status(401).json({
+        message: "Bitte melde dich als Dozent:in an.",
+      });
+    }
+
+    const veranstaltungId = Number(req.params.id);
+    const dozentId = Number(req.params.dozentId);
+
+    const veranstaltung = await prisma.veranstaltung.findFirst({
+      where: {
+        id: veranstaltungId,
+        dozentId: req.session.dozentId,
+      },
+    });
+
+    if (!veranstaltung) {
+      return res.status(404).json({
+        message:
+          "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
+      });
+    }
+
+    const verknuepfung = await prisma.veranstaltungDozent.findUnique({
+      where: {
+        veranstaltungId_dozentId: {
+          veranstaltungId,
+          dozentId,
+        },
+      },
+    });
+
+    if (!verknuepfung) {
+      return res.status(404).json({
+        message: "Diese Verknüpfung existiert nicht.",
+      });
+    }
+
+    await prisma.veranstaltungDozent.delete({
+      where: {
+        veranstaltungId_dozentId: {
+          veranstaltungId,
+          dozentId,
+        },
+      },
+    });
+
+    res.status(204).end();
   });
 });
