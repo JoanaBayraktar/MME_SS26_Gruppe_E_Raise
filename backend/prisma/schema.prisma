@@ -78,6 +78,7 @@ model Umfrage {
   sessionId       Int             @map("session_id")
   session         Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   frageText       String          @map("frage_text")
+  typ             UmfrageTyp      @default(SINGLE_CHOICE)
   status          UmfrageStatus   @default(AKTIV)
   erstelltAm      DateTime        @default(now()) @map("erstellt_am")
   antwortoptionen Antwortoption[]
@@ -88,6 +89,12 @@ model Umfrage {
 enum UmfrageStatus {
   AKTIV
   BEENDET
+}
+
+enum UmfrageTyp {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SKALA
 }
 
 model Antwortoption {
