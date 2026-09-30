@@ -7,13 +7,16 @@ import { ROLE } from "../lib/role";
 import { getStoredSession } from "../lib/session";
 import { ROUTES } from "../routes";
 import QuestionsEdit from "./questions/questions_edit";
+import Archiv from "./archiv/archiv";
 
+// Definition der verfügbaren Tabs in der Navigation
 const TABS = [
   { id: "questions", label: "Fragenfeed", path: "questions" },
   { id: "umfrage", label: "Umfrage", path: "umfrage" },
   { id: "archiv", label: "Archiv", path: "archiv" },
 ] as const;
 
+// Intervall für die automatische Aktualisierung der Header-Daten (in ms)
 const SYNC_INTERVAL_MS = 8000;
 
 interface ExtendedActiveSession extends ActiveSessionDto {
@@ -48,12 +51,13 @@ export default function NavigationPage({
   isDozent = false,
   onBack,
 }: NavigationPageProps) {
+  // States für UI-Steuerung und Daten
   const [isContentScrolling, setIsContentScrolling] = useState(false);
   const scrollEndTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [headerData, setHeaderData] = useState<ExtendedActiveSession | null>(null);
   const [showQrCode, setShowQrCode] = useState(false);
   
-  // State for the simplified confirmation modal
+  // State für das vereinfachte Bestätigungs-Modal zum Beenden der Session
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
 
   const [isQuestionsEditOpen, setIsQuestionsEditOpen] = useState(false);
@@ -62,8 +66,12 @@ export default function NavigationPage({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Prüfen, ob wir uns gerade in der Dozenten-Fragenansicht befinden
   const isQuestionsView = location.pathname.endsWith("questions");
+  // Prüfen, ob wir uns im Archiv befinden
+  const isArchivView = location.pathname.endsWith("archiv");
 
+  // Event-Listener für das Öffnen des Fragen-Bearbeitungsmodus registrieren
   useEffect(() => {
     const handleOpenEdit = () => setIsQuestionsEditOpen(true);
     window.addEventListener("open-questions-edit", handleOpenEdit);
@@ -72,6 +80,7 @@ export default function NavigationPage({
     };
   }, []);
 
+  // Regelmäßiges Laden (Polling) der Header- bzw. Session-Daten je nach Rolle
   useEffect(() => {
     let cancelled = false;
 
@@ -106,6 +115,7 @@ export default function NavigationPage({
     };
   }, []);
 
+  // Scroll-Handler zur Erkennung von Scroll-Aktivitäten im Hauptbereich
   const handleContentScroll = useCallback(() => {
     setIsContentScrolling(true);
     if (scrollEndTimeout.current) clearTimeout(scrollEndTimeout.current);
@@ -118,9 +128,10 @@ export default function NavigationPage({
     };
   }, []);
 
+  // Sichtbare Tabs filtern (Dozenten sehen standardmäßig kein Archiv-Tab hier)
   const visibleTabs = TABS.filter((tab) => !(isDozent && tab.id === "archiv"));
 
-  // Handler when clicking confirm inside the modal (mit Übergabe der echten Session-ID)
+  // Handler beim Bestätigen im Modal (leitet zur entsprechenden End-Ansicht weiter)
   const handleConfirmEndSession = () => {
     setShowEndSessionModal(false);
     const activeId = headerData?.id;
@@ -136,8 +147,8 @@ export default function NavigationPage({
     <div className="relative flex h-[100dvh] w-full overflow-hidden bg-white isolate">
       {/* Linker Bereich: Navigation, Tabs und Hauptinhalt */}
       <div className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-gray-50">
-        <header className="shrink-0 border-b border-gray-200 bg-white px-6 py-4 shadow-sm z-10">
-          <div className="flex items-center justify-between gap-4">
+        <header className="shrink-0 border-b border-gray-200 bg-white px-6 lg:px-8 py-4 shadow-sm z-10">
+          <div className="w-full flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {isDozent && (
                 <button
@@ -169,6 +180,7 @@ export default function NavigationPage({
               </nav>
             </div>
 
+            {/* Dozenten-Button zum Bearbeiten der Fragen im Fragenfeed */}
             {isDozent && isQuestionsView && !isQuestionsEditOpen && (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent("open-questions-edit"))}
@@ -177,29 +189,47 @@ export default function NavigationPage({
                 Fragen bearbeiten
               </button>
             )}
+
+            {/* Session-Informationen für Studierende im oberen Header */}
+            {!isDozent && headerData && (
+              <div className="hidden sm:flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">
+                  {headerData.veranstaltungName ?? headerData.name ?? "Aktive Session"}
+                </span>
+                {headerData.code && (
+                  <span className="rounded-full bg-pink-50 border border-pink-200 px-3 py-1 text-sm font-bold text-pink-600 shadow-2xs">
+                    #{headerData.code}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
         {/* Hauptinhaltsbereich */}
         <main
           onScroll={handleContentScroll}
-          className={`relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 scrollbar-fade ${
+          className={`relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 lg:px-8 py-6 scrollbar-fade ${
             isContentScrolling ? "scrollbar-fade-visible" : ""
           }`}
         >
-          {isQuestionsEditOpen ? (
-            <QuestionsEdit
-              questions={questionsState}
-              onClose={() => setIsQuestionsEditOpen(false)}
-              onUpdateQuestions={setQuestionsState}
-            />
-          ) : (
-            <Outlet />
-          )}
+          <div className="w-full">
+            {isQuestionsEditOpen ? (
+              <QuestionsEdit
+                questions={questionsState}
+                onClose={() => setIsQuestionsEditOpen(false)}
+                onUpdateQuestions={setQuestionsState}
+              />
+            ) : isArchivView ? (
+              <Archiv />
+            ) : (
+              <Outlet />
+            )}
+          </div>
         </main>
       </div>
 
-      {/* Rechter Dozenten-Sidebar */}
+      {/* Rechter Dozenten-Sidebar (bleibt exklusiv für Dozenten erhalten) */}
       {isDozent && (
         <aside className="hidden lg:flex w-96 flex-col border-l border-gray-200 bg-white p-6 justify-between shrink-0 h-full shadow-2xl z-40 pointer-events-auto">
           <div className="flex flex-col items-center text-center overflow-y-auto overflow-x-hidden">
@@ -210,6 +240,7 @@ export default function NavigationPage({
               #{headerData?.code ?? "------"}
             </p>
 
+            {/* Klickbarer QR-Code Bereich zum Vergrößern */}
             <div 
               className="mt-6 rounded-2xl border border-gray-100 bg-gray-50 p-4 shadow-sm cursor-pointer" 
               onClick={() => setShowQrCode(true)}
@@ -224,6 +255,7 @@ export default function NavigationPage({
               </p>
             </div>
 
+            {/* Session-Metadaten */}
             <div className="mt-6 w-full space-y-3 text-sm border-t border-gray-100 pt-4">
               <div className="flex justify-between items-center text-gray-500">
                 <span>Session</span>
@@ -244,6 +276,7 @@ export default function NavigationPage({
             </div>
           </div>
 
+          {/* Dozenten-Profil und Session-Beenden-Aktion */}
           <div className="mt-4 space-y-4 border-t border-gray-100 pt-4 bg-white shrink-0">
             <div className="flex items-center justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm shadow-sm">
@@ -256,7 +289,7 @@ export default function NavigationPage({
               </div>
             </div>
 
-            {/* Session Beenden Button in Accent Color */}
+            {/* Session beenden Button */}
             <button
               type="button"
               onClick={() => setShowEndSessionModal(true)}
@@ -271,7 +304,7 @@ export default function NavigationPage({
         </aside>
       )}
 
-      {/* QR Code Zoom Modal */}
+      {/* Modal zum Vergrößern des QR-Codes */}
       {showQrCode && headerData && (
         <Modal className="max-w-xs p-6 text-center" onClose={() => setShowQrCode(false)}>
           {(close) => (
@@ -294,7 +327,7 @@ export default function NavigationPage({
         </Modal>
       )}
 
-      {/* Simplified Confirm Modal */}
+      {/* Bestätigungs-Modal zum Beenden der Session */}
       {showEndSessionModal && (
         <Modal className="max-w-md p-6 text-center" onClose={() => setShowEndSessionModal(false)}>
           {() => (

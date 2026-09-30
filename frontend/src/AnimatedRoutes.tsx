@@ -20,7 +20,7 @@ import { ROUTES } from "./routes";
 import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
 import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
 import NavigationPage from "./pages/NavigationPage";
-import Archiv from "./pages/archiv/Archiv";
+import Archiv from "./pages/archiv/archiv";
 import Questions from "./pages/questions/questions";
 import Umfrage from "./pages/umfrage/umfrage";
 import { getJson, SessionDetailDto } from "./lib/api";
