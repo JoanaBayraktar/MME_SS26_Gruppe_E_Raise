@@ -67,6 +67,72 @@ umfragenRouter.get("/active", async (req, res) => {
   });
 });
 
+// liefert die aktuellen ergebnisse einer umfrage
+umfragenRouter.get("/:id/results", async (req, res) => {
+  const umfrageId = Number(req.params.id);
+
+  if (!Number.isInteger(umfrageId) || umfrageId <= 0) {
+    return res.status(400).json({
+      message: "Ungültige Umfrage-ID.",
+    });
+  }
+
+  const umfrage = await prisma.umfrage.findUnique({
+    where: {
+      id: umfrageId,
+    },
+    include: {
+      antwortoptionen: {
+        orderBy: {
+          id: "asc",
+        },
+        include: {
+          abstimmungen: {
+            select: {
+              studentToken: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!umfrage) {
+    return res.status(404).json({
+      message: "Umfrage wurde nicht gefunden.",
+    });
+  }
+
+  // zählt jede teilnehmende person nur einmal
+  const teilnehmendeTokens = new Set(
+    umfrage.antwortoptionen.flatMap((option) =>
+      option.abstimmungen.map((abstimmung) => abstimmung.studentToken),
+    ),
+  );
+
+  const totalTeilnehmende = teilnehmendeTokens.size;
+
+  res.json({
+    id: umfrage.id,
+    frageText: umfrage.frageText,
+    typ: umfrage.typ,
+    totalTeilnehmende,
+    antwortoptionen: umfrage.antwortoptionen.map((option) => {
+      const stimmen = option.abstimmungen.length;
+
+      return {
+        id: option.id,
+        text: option.text,
+        stimmen,
+        prozent:
+          totalTeilnehmende === 0
+            ? 0
+            : Math.round((stimmen / totalTeilnehmende) * 100),
+      };
+    }),
+  });
+});
+
 // speichert die abstimmung einer studentin oder eines studenten
 umfragenRouter.post("/:id/vote", async (req, res) => {
   const umfrageId = Number(req.params.id);
