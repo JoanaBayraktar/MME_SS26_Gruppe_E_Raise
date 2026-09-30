@@ -33,6 +33,18 @@ export default function Umfrage() {
   const [voteMessage, setVoteMessage] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [ergebnis, setErgebnis] = useState<UmfrageErgebnisDto | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newFrageText, setNewFrageText] = useState("");
+  const [newTyp, setNewTyp] = useState<
+    "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "SKALA"
+  >("SINGLE_CHOICE");
+  const [newAntwortoptionen, setNewAntwortoptionen] = useState(["", ""]);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const storedSession = getStoredSession();
+  const isDozent = storedSession?.role === ROLE.DOZENT;
 
   // lädt die aktuell aktive umfrage für die jeweilige session
   const loadUmfrage = useCallback(async (showRefreshing = false) => {
@@ -75,6 +87,8 @@ export default function Umfrage() {
           setUmfrage(null);
           return;
         }
+
+        setActiveSessionId(session.id);
 
         const activeUmfrage = await getJson<ActiveUmfrageDto | null>(
           `/api/umfragen/active?sessionId=${session.id}`,
@@ -138,6 +152,52 @@ export default function Umfrage() {
 
     touchStartY.current = null;
     setPullDistance(0);
+  };
+
+  // erstellt und startet eine neue umfrage
+  const handleCreateUmfrage = async () => {
+    if (!activeSessionId || isCreating) return;
+
+    const antwortoptionen = newAntwortoptionen
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    if (!newFrageText.trim()) {
+      setCreateMessage("Bitte gib eine Frage ein.");
+      return;
+    }
+
+    if (antwortoptionen.length < 2) {
+      setCreateMessage("Bitte gib mindestens zwei Antwortoptionen ein.");
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateMessage(null);
+
+    try {
+      const createdUmfrage = await postJson<ActiveUmfrageDto>("/api/umfragen", {
+        sessionId: activeSessionId,
+        frageText: newFrageText.trim(),
+        typ: newTyp,
+        antwortoptionen,
+      });
+
+      setUmfrage(createdUmfrage);
+      setHasVoted(true);
+      setShowCreateForm(false);
+      setNewFrageText("");
+      setNewAntwortoptionen(["", ""]);
+      await loadErgebnis(createdUmfrage.id);
+    } catch (error) {
+      setCreateMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Die Umfrage konnte nicht erstellt werden.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   // wählt je nach umfragetyp eine oder mehrere optionen aus
@@ -232,6 +292,111 @@ export default function Umfrage() {
   }
 
   if (!umfrage) {
+    if (isDozent && showCreateForm) {
+      return (
+        <div className="rounded-2xl bg-white p-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Neue Umfrage erstellen
+          </h2>
+
+          <div className="mt-5 space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Frage
+              </label>
+
+              <input
+                type="text"
+                value={newFrageText}
+                onChange={(event) => setNewFrageText(event.target.value)}
+                placeholder="z. B. Welche Antwort ist richtig?"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-pink-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Umfragetyp
+              </label>
+
+              <select
+                value={newTyp}
+                onChange={(event) =>
+                  setNewTyp(
+                    event.target.value as
+                      | "SINGLE_CHOICE"
+                      | "MULTIPLE_CHOICE"
+                      | "SKALA",
+                  )
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-pink-500"
+              >
+                <option value="SINGLE_CHOICE">Single Choice</option>
+                <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                <option value="SKALA">Skala</option>
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">
+                Antwortoptionen
+              </p>
+
+              {newAntwortoptionen.map((option, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  value={option}
+                  onChange={(event) =>
+                    setNewAntwortoptionen((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? event.target.value : item,
+                      ),
+                    )
+                  }
+                  placeholder={`Antwort ${index + 1}`}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-pink-500"
+                />
+              ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setNewAntwortoptionen((current) => [...current, ""])
+                }
+                className="text-sm font-medium text-pink-600"
+              >
+                + Antwort hinzufügen
+              </button>
+            </div>
+
+            {createMessage && (
+              <p className="text-sm text-red-600">{createMessage}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Abbrechen
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleCreateUmfrage()}
+                disabled={isCreating}
+                className="flex-1 rounded-xl bg-pink-600 px-4 py-3 text-sm font-semibold text-white hover:bg-pink-700 disabled:bg-gray-300"
+              >
+                {isCreating ? "Wird gestartet..." : "Umfrage starten"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         onTouchStart={handleTouchStart}
@@ -246,26 +411,38 @@ export default function Umfrage() {
               : "Zum Aktualisieren weiterziehen"}
           </p>
         )}
+
         <h2 className="text-lg font-semibold text-gray-900">
           Keine aktive Umfrage vorhanden
         </h2>
 
         <p className="mt-2 text-sm text-gray-500">
-          Sobald eine neue Umfrage gestartet wird, erscheint sie automatisch
-          hier.
+          {isDozent
+            ? "Erstelle eine neue Umfrage für die laufende Session."
+            : "Sobald eine neue Umfrage gestartet wird, erscheint sie automatisch hier."}
         </p>
 
-        <button
-          type="button"
-          onClick={() => void loadUmfrage(true)}
-          disabled={isRefreshing}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-          />
-          Aktualisieren
-        </button>
+        {isDozent ? (
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(true)}
+            className="mt-5 rounded-xl bg-pink-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-pink-700"
+          >
+            Umfrage erstellen
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void loadUmfrage(true)}
+            disabled={isRefreshing}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            Aktualisieren
+          </button>
+        )}
       </div>
     );
   }

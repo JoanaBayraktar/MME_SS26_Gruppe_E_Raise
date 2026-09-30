@@ -1,7 +1,105 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../prisma";
 
 export const umfragenRouter = Router();
+
+const createUmfrageSchema = z.object({
+  sessionId: z.number().int().positive(),
+  frageText: z.string().trim().min(1, "Bitte gib eine Frage ein."),
+  typ: z.enum(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "SKALA"]),
+  antwortoptionen: z
+    .array(z.string().trim().min(1))
+    .min(2, "Bitte gib mindestens zwei Antwortoptionen an."),
+});
+
+// erstellt und startet eine neue umfrage
+umfragenRouter.post("/", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({
+      message: "Bitte melde dich als Dozent:in an.",
+    });
+  }
+
+  const parsed = createUmfrageSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: parsed.error.issues[0].message,
+    });
+  }
+
+  const { sessionId, frageText, typ, antwortoptionen } = parsed.data;
+
+  // prüft ob die session von der eingeloggten person verwaltet werden darf
+  const session = await prisma.session.findFirst({
+    where: {
+      id: sessionId,
+      veranstaltung: {
+        OR: [
+          { dozentId: req.session.dozentId },
+          {
+            mitDozenten: {
+              some: {
+                dozentId: req.session.dozentId,
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  if (!session) {
+    return res.status(404).json({
+      message: "Diese Session wurde nicht gefunden.",
+    });
+  }
+
+  // beendet eine eventuell noch aktive umfrage
+  await prisma.umfrage.updateMany({
+    where: {
+      sessionId,
+      status: "AKTIV",
+    },
+    data: {
+      status: "BEENDET",
+    },
+  });
+
+  const umfrage = await prisma.umfrage.create({
+    data: {
+      sessionId,
+      frageText,
+      typ,
+      status: "AKTIV",
+      antwortoptionen: {
+        create: antwortoptionen.map((text) => ({
+          text,
+        })),
+      },
+    },
+    include: {
+      antwortoptionen: {
+        orderBy: {
+          id: "asc",
+        },
+      },
+    },
+  });
+
+  return res.status(201).json({
+    id: umfrage.id,
+    frageText: umfrage.frageText,
+    typ: umfrage.typ,
+    status: umfrage.status,
+    bereitsAbgestimmt: false,
+    antwortoptionen: umfrage.antwortoptionen.map((option) => ({
+      id: option.id,
+      text: option.text,
+    })),
+  });
+});
 
 // liefert die aktuell aktive umfrage einer session
 umfragenRouter.get("/active", async (req, res) => {
