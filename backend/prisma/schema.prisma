@@ -16,6 +16,7 @@ model Dozent {
   passwortHash    String          @map("passwort_hash")
   erstelltAm      DateTime        @default(now()) @map("erstellt_am")
   veranstaltungen Veranstaltung[]
+  verknuepfteVeranstaltungen VeranstaltungDozent[]
 
   @@map("dozent")
 }
@@ -29,8 +30,22 @@ model Veranstaltung {
   erstelltAm      DateTime        @default(now()) @map("erstellt_am")
   sessions        Session[]
   archivEintraege ArchivEintrag[]
+  mitDozenten VeranstaltungDozent[]
 
   @@map("veranstaltung")
+}
+
+model VeranstaltungDozent {
+  veranstaltungId Int           @map("veranstaltung_id")
+  veranstaltung   Veranstaltung @relation(fields: [veranstaltungId], references: [id], onDelete: Cascade)
+
+  dozentId Int    @map("dozent_id")
+  dozent   Dozent @relation(fields: [dozentId], references: [id], onDelete: Cascade)
+
+  erstelltAm DateTime @default(now()) @map("erstellt_am")
+
+  @@id([veranstaltungId, dozentId])
+  @@map("veranstaltung_dozent")
 }
 
 model Session {
