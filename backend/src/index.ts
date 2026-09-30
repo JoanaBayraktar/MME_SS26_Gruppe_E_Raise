@@ -49,7 +49,10 @@ app.get("/api/profile", (_req, res) => {
   res.json({ name: "Teilnehmer", anonym: false });
 });
 
-// Health check endpoint (checks DB connectivity)
+// simple healthcheck, prueft auch die DB-Verbindung
+app.use("/api/auth", authRouter);
+app.use("/api/sessions", sessionsRouter);
+app.use("/api/veranstaltungen", veranstaltungenRouter);
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
