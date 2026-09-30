@@ -45,8 +45,18 @@ const createSessionSchema = z
   .object({
     veranstaltungId: z.number().int().positive(),
     name: z.string().trim().min(1, "Bitte gib einen Sitzungsnamen ein."),
-    startZeit: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Bitte gib ein gültiges Datum ein."),
-    endZeit: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Bitte gib ein gültiges Datum ein."),
+    startZeit: z
+      .string()
+      .refine(
+        (value) => !Number.isNaN(Date.parse(value)),
+        "Bitte gib ein gültiges Datum ein.",
+      ),
+    endZeit: z
+      .string()
+      .refine(
+        (value) => !Number.isNaN(Date.parse(value)),
+        "Bitte gib ein gültiges Datum ein.",
+      ),
     autoStart: z.boolean().default(true),
     code: z
       .string()
@@ -64,7 +74,9 @@ export const sessionsRouter = Router();
 
 sessionsRouter.get("/code", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const code = await generateUniqueCode();
@@ -76,19 +88,34 @@ sessionsRouter.get("/by-code/:code", async (req, res) => {
   const session = await prisma.session.findUnique({ where: { code } });
 
   if (!session || computeSessionStatus(session) === "BEENDET") {
-    return res.status(404).json({ message: "Diese Session existiert nicht oder ist beendet." });
+    return res
+      .status(404)
+      .json({ message: "Diese Session existiert nicht oder ist beendet." });
   }
 
-  res.json({ id: session.id, name: session.name, status: computeSessionStatus(session) });
+  res.json({
+    id: session.id,
+    name: session.name,
+    status: computeSessionStatus(session),
+  });
 });
 
 sessionsRouter.get("/", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const sessions = await prisma.session.findMany({
-    where: { veranstaltung: { dozentId: req.session.dozentId } },
+    where: {
+      veranstaltung: {
+        OR: [
+          { dozentId: req.session.dozentId },
+          { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+        ],
+      },
+    },
     orderBy: { startZeit: "desc" },
     include: { veranstaltung: true },
   });
@@ -102,13 +129,15 @@ sessionsRouter.get("/", async (req, res) => {
       datum: s.datum,
       veranstaltungId: s.veranstaltungId,
       veranstaltungName: s.veranstaltung.name,
-    }))
+    })),
   );
 });
 
 sessionsRouter.get("/:id", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const id = Number(req.params.id);
@@ -117,7 +146,15 @@ sessionsRouter.get("/:id", async (req, res) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: { id, veranstaltung: { dozentId: req.session.dozentId } },
+    where: {
+      id,
+      veranstaltung: {
+        OR: [
+          { dozentId: req.session.dozentId },
+          { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+        ],
+      },
+    },
     include: { veranstaltung: true },
   });
   if (!session) {
@@ -138,12 +175,19 @@ sessionsRouter.get("/:id", async (req, res) => {
 
 sessionsRouter.get("/active", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const candidates = await prisma.session.findMany({
     where: {
-      veranstaltung: { dozentId: req.session.dozentId },
+      veranstaltung: {
+        OR: [
+          { dozentId: req.session.dozentId },
+          { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+        ],
+      },
       OR: [{ autoStart: true }, { status: "LAUFEND" }],
     },
     include: { veranstaltung: true },
@@ -165,27 +209,46 @@ sessionsRouter.get("/active", async (req, res) => {
 
 sessionsRouter.post("/", async (req, res) => {
   if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+    return res
+      .status(401)
+      .json({ message: "Bitte melde dich als Dozent:in an." });
   }
 
   const parsed = createSessionSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: parsed.error.issues[0].message });
   }
-  const { veranstaltungId, name, startZeit, endZeit, autoStart, code: requestedCode } = parsed.data;
+  const {
+    veranstaltungId,
+    name,
+    startZeit,
+    endZeit,
+    autoStart,
+    code: requestedCode,
+  } = parsed.data;
 
   const veranstaltung = await prisma.veranstaltung.findFirst({
-    where: { id: veranstaltungId, dozentId: req.session.dozentId },
+    where: {
+      id: veranstaltungId,
+      OR: [
+        { dozentId: req.session.dozentId },
+        { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+      ],
+    },
   });
   if (!veranstaltung) {
-    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
+    return res
+      .status(404)
+      .json({ message: "Diese Veranstaltung existiert nicht." });
   }
 
   let code = requestedCode;
   if (code) {
     const existing = await prisma.session.findUnique({ where: { code } });
     if (existing) {
-      return res.status(409).json({ message: "Dieser Session-Code ist bereits vergeben." });
+      return res
+        .status(409)
+        .json({ message: "Dieser Session-Code ist bereits vergeben." });
     }
   } else {
     code = await generateUniqueCode();
