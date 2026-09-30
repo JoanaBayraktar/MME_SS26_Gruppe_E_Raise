@@ -10,9 +10,19 @@ const TABS = [
 
 interface NavigationPageProps {
   isDozent?: boolean;
+  courseName?: string;
+  sessionTitle?: string;
+  courseCode?: string;
+  onBack?: () => void;
 }
 
-export default function NavigationPage({ isDozent = false }: NavigationPageProps) {
+export default function NavigationPage({
+  isDozent = false,
+  courseName = "MME Blockkurs",
+  sessionTitle = "Session 3 · Mo 10:15",
+  courseCode = "#2468",
+  onBack,
+}: NavigationPageProps) {
   const [isContentScrolling, setIsContentScrolling] = useState(false);
   const scrollEndTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   
@@ -52,25 +62,25 @@ export default function NavigationPage({ isDozent = false }: NavigationPageProps
       <header className="shrink-0 border-b border-gray-200 bg-white px-5 pb-0 pt-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Zurück-Button für Dozenten ins Hauptmenü */}
+            {/* Zurück-Button für Dozenten */}
             {isDozent && (
               <button
-                onClick={() => navigate(ROUTES.DOZENT_DASHBOARD)}
+                onClick={onBack ?? (() => navigate(ROUTES.DOZENT_DASHBOARD))}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                title="Zurück zum Hauptmenü"
+                title="Zurück"
               >
                 <span className="text-lg font-bold leading-none">‹</span>
               </button>
             )}
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-gray-900">MME Blockkurs</h1>
-              <p className="mt-0.5 text-sm text-gray-500">Session 3 · Mo 10:15</p>
+              <h1 className="text-xl font-bold tracking-tight text-gray-900">{courseName}</h1>
+              <p className="mt-0.5 text-sm text-gray-500">{sessionTitle}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* "Fragen bearbeiten" Button – sendet ein Event an die Questions-Komponente */}
-            {isQuestionsView && (
+            {/* "Fragen bearbeiten" Button – nur sichtbar für Dozenten in der Fragenansicht */}
+            {isDozent && isQuestionsView && (
               <button
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent("open-questions-edit"));
@@ -82,7 +92,7 @@ export default function NavigationPage({ isDozent = false }: NavigationPageProps
             )}
 
             <span className="rounded-full bg-pink-100 px-3 py-1 text-sm font-semibold text-pink-600">
-              #2468
+              {courseCode}
             </span>
           </div>
         </div>
