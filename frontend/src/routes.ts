@@ -13,6 +13,10 @@ export const ROUTES = {
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
   DESIGN_SYSTEM: "/design-system",
+  NAVIGATION: "/navigation",
+  ARCHIV: "/navigation/archiv",
+  QUESTIONS: "/navigation/questions",
+  UMFRAGE: "/navigation/umfrage",
 } as const;
 
 // Tiefe jeder Route in der Navigationshierarchie (Onboarding = Wurzel).

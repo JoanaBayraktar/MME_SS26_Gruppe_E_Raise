@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import StyleGuide from "./StyleGuide";
 import OnboardingPage from "./pages/OnboardingPage";
 import JoinPage from "./pages/JoinPage";
@@ -14,13 +14,14 @@ import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import { ROUTES } from "./routes";
-import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
+import NavigationPage from "./pages/NavigationPage";
+import Archiv from "./pages/archiv/Archiv";
+import Questions from "./pages/questions/questions";
+import Umfrage from "./pages/umfrage/umfrage";
 
 export function AnimatedRoutes() {
-  const location = useViewTransitionLocation();
-
   return (
-    <Routes location={location}>
+    <Routes>
       <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
       <Route path={ROUTES.JOIN} element={<JoinPage />} />
       <Route path={ROUTES.JOIN_QR} element={<QrScannerPage />} />
@@ -43,6 +44,11 @@ export function AnimatedRoutes() {
         element={<PlaceholderPage title="Account" issueNumber={9} backTo={ROUTES.DOZENT_DASHBOARD} />}
       />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
+      <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
+        <Route path={ROUTES.QUESTIONS} element={<Questions />} />
+        <Route path={ROUTES.UMFRAGE} element={<Umfrage />} />
+        <Route path={ROUTES.ARCHIV} element={<Archiv />} />
+      </Route>
     </Routes>
   );
 }
