@@ -92,3 +92,25 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
   return data as T;
 }
+
+export async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+  }
+  return data as T;
+}
+
+export async function deleteRequest(path: string): Promise<void> {
+  const res = await fetch(path, { method: "DELETE", credentials: "include" });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+  }
+}

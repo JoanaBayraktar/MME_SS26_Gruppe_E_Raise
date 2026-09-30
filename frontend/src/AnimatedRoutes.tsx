@@ -13,6 +13,7 @@ import SessionDetailPage from "./pages/SessionDetailPage";
 import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import AccountPage from "./pages/AccountPage";
 import { ROUTES } from "./routes";
 import NavigationPage from "./pages/NavigationPage";
 import Archiv from "./pages/archiv/Archiv";
@@ -39,10 +40,7 @@ export function AnimatedRoutes() {
         path={ROUTES.DOZENT_ARCHIV}
         element={<PlaceholderPage title="Archiv" issueNumber={27} backTo={ROUTES.DOZENT_DASHBOARD} />}
       />
-      <Route
-        path={ROUTES.DOZENT_ACCOUNT}
-        element={<PlaceholderPage title="Account" issueNumber={9} backTo={ROUTES.DOZENT_DASHBOARD} />}
-      />
+      <Route path={ROUTES.DOZENT_ACCOUNT} element={<AccountPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
         <Route path={ROUTES.QUESTIONS} element={<Questions />} />
