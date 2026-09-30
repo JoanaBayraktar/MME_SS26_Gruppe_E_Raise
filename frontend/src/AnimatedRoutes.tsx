@@ -15,6 +15,7 @@ import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import { ROUTES } from "./routes";
 import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
+import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
 
 export function AnimatedRoutes() {
   const location = useViewTransitionLocation();
@@ -32,15 +33,37 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
       </Route>
-      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
-      <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
+      <Route
+        path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`}
+        element={<SessionDetailPage />}
+      />
+      <Route
+        path={ROUTES.DOZENT_VERANSTALTUNG_NEW}
+        element={<NewVeranstaltungPage />}
+      />
+      <Route
+        path={`${ROUTES.DOZENT_VERANSTALTUNGEN}/:veranstaltungId`}
+        element={<VeranstaltungDetailPage />}
+      />
       <Route
         path={ROUTES.DOZENT_ARCHIV}
-        element={<PlaceholderPage title="Archiv" issueNumber={27} backTo={ROUTES.DOZENT_DASHBOARD} />}
+        element={
+          <PlaceholderPage
+            title="Archiv"
+            issueNumber={27}
+            backTo={ROUTES.DOZENT_DASHBOARD}
+          />
+        }
       />
       <Route
         path={ROUTES.DOZENT_ACCOUNT}
-        element={<PlaceholderPage title="Account" issueNumber={9} backTo={ROUTES.DOZENT_DASHBOARD} />}
+        element={
+          <PlaceholderPage
+            title="Account"
+            issueNumber={9}
+            backTo={ROUTES.DOZENT_DASHBOARD}
+          />
+        }
       />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
     </Routes>
