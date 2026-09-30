@@ -164,5 +164,5 @@ Mit einem zweiten Browser bzw. einer weiteren Studierenden-Session kann eine wei
 
 ## Zuständigkeiten
 - **Joana Bayraktar:** Onboarding & Authentifizierung, Session-Management & Navigation
-- **Philomena:** Veranstaltungsverwaltung, Umfragen & Abstimmungen
+- **Philomena Ledermann:** Veranstaltungsverwaltung, Umfragen & Abstimmungen
 - **Johannes Gaul:** Live Q&A / Fragen-Modul, Archiv & Recherche
