@@ -30,6 +30,9 @@ export default function Questions() {
   const [sortBy, setSortBy] = useState<"newest" | "votes">("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
+  // State für das Ein- und Ausblenden der beantworteten Fragen
+  const [isAnsweredOpen, setIsAnsweredOpen] = useState(false);
+
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   
   // State für das Bearbeitungs-Modal
@@ -39,7 +42,6 @@ export default function Questions() {
   const topicBoxRef = useRef<HTMLDivElement>(null);
   const sortBoxRef = useRef<HTMLDivElement>(null);
 
-  // Event-Listener, um das Modal über den Header-Button in der NavigationPage zu öffnen
   useEffect(() => {
     const handleOpenEdit = () => setIsEditModalOpen(true);
     window.addEventListener("open-questions-edit", handleOpenEdit as EventListener);
@@ -143,20 +145,16 @@ export default function Questions() {
     }
   };
 
-  // Funktion zum Öffnen der Frage und automatischen Status-Wechsel von "neu" zu "gefragt"
   const handleOpenQuestion = async (question: Question) => {
     setSelectedQuestion(question);
 
-    // Wenn der Status "neu" ist, auf "gefragt" umschalten
     if (question.status === "neu") {
       try {
-        // Optimistisches Update im lokalen State
         setQuestions((current) =>
           current.map((q) => (q.id === question.id ? { ...q, status: "gefragt" } : q))
         );
         setSelectedQuestion((prev) => (prev ? { ...prev, status: "gefragt" } : null));
 
-        // In der Datenbank speichern
         await updateQuestionStatus(question.id, "gefragt");
       } catch (error) {
         console.error("Fehler beim Aktualisieren des Status:", error);
@@ -164,14 +162,23 @@ export default function Questions() {
     }
   };
 
-  const sortedQuestions = [...questions].sort((a, b) => {
-    if (sortBy === "votes") {
-      if (b.votes !== a.votes) {
-        return b.votes - a.votes;
+  // Trennung in aktive und beantwortete Fragen
+  const activeQuestions = questions.filter((q) => q.status !== "beantwortet");
+  const answeredQuestions = questions.filter((q) => q.status === "beantwortet");
+
+  const sortItems = (list: Question[]) => {
+    return [...list].sort((a, b) => {
+      if (sortBy === "votes") {
+        if (b.votes !== a.votes) {
+          return b.votes - a.votes;
+        }
       }
-    }
-    return b.id - a.id;
-  });
+      return b.id - a.id;
+    });
+  };
+
+  const sortedActiveQuestions = sortItems(activeQuestions);
+  const sortedAnsweredQuestions = sortItems(answeredQuestions);
 
   const professorTopics = ["Einführung & Grundlagen", "Methodik & Analyse", "Ergebnisse der Studie", "Diskussion & Ausblick"];
 
@@ -188,116 +195,192 @@ export default function Questions() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-24 animate-fade-in motion-reduce:animate-none">
+    <div className="flex flex-col min-h-[calc(100vh-7rem)] pb-32 px-4 animate-fade-in motion-reduce:animate-none">
       
-      {/* Sortier-Leiste oben */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {sortedQuestions.length} {sortedQuestions.length === 1 ? "Frage" : "Fragen"}
-        </span>
+      {/* Äußerer Wrapper mit reduzierter Maximalbreite und Zentrierung */}
+      <div className="w-full max-w-xl mx-auto flex flex-col flex-1">
         
-        <div className="relative" ref={sortBoxRef}>
-          <button
-            type="button"
-            onClick={() => { setIsSortOpen(!isSortOpen); setIsSlideOpen(false); setIsTopicOpen(false); }}
-            className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
-          >
-            <ArrowUpDown className="h-3.5 w-3.5 text-pink-600" />
-            <span>{sortBy === "newest" ? "Neueste" : "Meiste Votes"}</span>
-          </button>
-
-          {isSortOpen && (
-            <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl z-25">
-              <button
-                type="button"
-                onClick={() => { setSortBy("newest"); setIsSortOpen(false); }}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                  sortBy === "newest" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Neueste zuerst
-              </button>
-              <button
-                type="button"
-                onClick={() => { setSortBy("votes"); setIsSortOpen(false); }}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                  sortBy === "votes" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Meiste Votes zuerst
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Fragen-Liste */}
-      <div className="flex-1 space-y-4 mb-6">
-        {sortedQuestions.map((question) => {
-          const statusValue = question.status || question.tag || "gefragt";
-          return (
-            <div 
-              key={question.id} 
-              onClick={() => handleOpenQuestion(question)}
-              className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
+        {/* Sortier-Leiste oben */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {activeQuestions.length} {activeQuestions.length === 1 ? "Frage" : "Fragen"}
+          </span>
+          
+          <div className="relative" ref={sortBoxRef}>
+            <button
+              type="button"
+              onClick={() => { setIsSortOpen(!isSortOpen); setIsSlideOpen(false); setIsTopicOpen(false); }}
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
             >
-              <div className="flex-1">
-                <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
-                  <span className="font-semibold text-gray-800">{question.author}</span>
-                  <span>•</span>
-                  <span>{question.time}</span>
-                </div>
-                
-                <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
-                
-                {/* Status-Badge, Folie und Thema mit gelbem Hintergrund */}
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
-                  <span className={`rounded-full px-2.5 py-0.5 font-medium border ${getStatusBadgeStyle(statusValue)}`}>
-                    {statusValue}
-                  </span>
-                  
-                  {question.slideNumber && (
-                    <>
-                      <span>•</span>
-                      <span>Folie {question.slideNumber}</span>
-                    </>
-                  )}
+              <ArrowUpDown className="h-3.5 w-3.5 text-pink-600" />
+              <span>{sortBy === "newest" ? "Neueste" : "Meiste Votes"}</span>
+            </button>
 
-                  {question.topic && (
-                    <>
-                      <span>•</span>
-                      <span>{question.topic}</span>
-                    </>
-                  )}
-
-                  <span className="ml-auto flex items-center gap-1 text-gray-400">
-                    <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
-                <button 
+            {isSortOpen && (
+              <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl z-25">
+                <button
                   type="button"
-                  onClick={(e) => handleVote(question.id, e)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                    question.voted 
-                    ? "bg-pink-600 text-white border border-pink-600" 
-                    : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                  onClick={() => { setSortBy("newest"); setIsSortOpen(false); }}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    sortBy === "newest" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                  Neueste zuerst
                 </button>
-                <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSortBy("votes"); setIsSortOpen(false); }}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    sortBy === "votes" ? "bg-pink-50 text-pink-600" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Meiste Votes zuerst
+                </button>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Aktive Fragen-Liste */}
+        <div className="flex-1 space-y-4">
+          {sortedActiveQuestions.map((question) => {
+            const statusValue = question.status || question.tag || "gefragt";
+            return (
+              <div 
+                key={question.id} 
+                onClick={() => handleOpenQuestion(question)}
+                className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md cursor-pointer"
+              >
+                <div className="flex-1">
+                  <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
+                    <span className="font-semibold text-gray-800">{question.author}</span>
+                    <span>•</span>
+                    <span>{question.time}</span>
+                  </div>
+                  
+                  <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-900">{question.text}</p>
+                  
+                  {/* Reihenfolge: Status -> Folie -> Thema */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+                    <span className={`rounded-full px-2.5 py-0.5 font-medium border ${getStatusBadgeStyle(statusValue)}`}>
+                      {statusValue}
+                    </span>
+                    
+                    {question.slideNumber && (
+                      <>
+                        <span>•</span>
+                        <span>Folie {question.slideNumber}</span>
+                      </>
+                    )}
+
+                    {question.topic && (
+                      <>
+                        <span>•</span>
+                        <span>{question.topic}</span>
+                      </>
+                    )}
+
+                    <span className="ml-auto flex items-center gap-1 text-gray-400">
+                      <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center border-l border-gray-100 pl-3">
+                  <button 
+                    type="button"
+                    onClick={(e) => handleVote(question.id, e)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                      question.voted 
+                      ? "bg-pink-600 text-white border border-pink-600" 
+                      : "bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+                    }`}
+                  >
+                    <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                  </button>
+                  <span className="text-xs font-bold text-gray-800">{question.votes}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Sektion für Beantwortete Fragen */}
+        {answeredQuestions.length > 0 && (
+          <div className="mt-6">
+            <div 
+              onClick={() => setIsAnsweredOpen(!isAnsweredOpen)}
+              className="flex items-center my-8 cursor-pointer group select-none"
+            >
+              <div className="flex-grow border-t border-gray-200/80 transition-colors group-hover:border-gray-300"></div>
+              <div className="mx-4 flex items-center gap-1.5 text-xs font-medium text-gray-400 tracking-wide group-hover:text-gray-600">
+                <span className="lowercase">beantwortet ({answeredQuestions.length})</span>
+                {isAnsweredOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </div>
+              <div className="flex-grow border-t border-gray-200/80 transition-colors group-hover:border-gray-300"></div>
             </div>
-          );
-        })}
+
+            {isAnsweredOpen && (
+              <div className="space-y-4 animate-fade-in">
+                {sortedAnsweredQuestions.map((question) => (
+                  <div 
+                    key={question.id} 
+                    onClick={() => handleOpenQuestion(question)}
+                    className="flex justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-4 shadow-sm transition-all hover:bg-white hover:shadow-md cursor-pointer opacity-85 hover:opacity-100"
+                  >
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-2 text-xs text-gray-400">
+                        <span className="font-semibold text-gray-600">{question.author}</span>
+                        <span>•</span>
+                        <span>{question.time}</span>
+                      </div>
+                      
+                      <p className="mb-2.5 text-sm font-medium leading-relaxed text-gray-700">{question.text}</p>
+                      
+                      {/* Reihenfolge: Status -> Folie -> Thema */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        <span className="rounded-full px-2.5 py-0.5 font-medium border bg-emerald-100 text-emerald-800 border-emerald-200">
+                          beantwortet
+                        </span>
+                        
+                        {question.slideNumber && (
+                          <>
+                            <span>•</span>
+                            <span>Folie {question.slideNumber}</span>
+                          </>
+                        )}
+
+                        {question.topic && (
+                          <>
+                            <span>•</span>
+                            <span>{question.topic}</span>
+                          </>
+                        )}
+
+                        <span className="ml-auto flex items-center gap-1 text-gray-400">
+                          <MessageSquare className="h-3.5 w-3.5" /> {question.comments}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center border-l border-gray-200/60 pl-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-400">
+                        <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                      </div>
+                      <span className="text-xs font-bold text-gray-500">{question.votes}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* Eingabefeld unten */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent pt-8 pb-4 px-4 z-30">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-xl mx-auto">
           <form onSubmit={handleSubmit} className="relative pt-6">
             <div ref={slideBoxRef} className="absolute left-4 top-0 z-20">
               <button
