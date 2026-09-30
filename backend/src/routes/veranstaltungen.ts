@@ -7,6 +7,10 @@ const createVeranstaltungSchema = z.object({
   kuerzel: z.string().trim().min(1, "Bitte gib ein Kürzel ein."),
 });
 
+const addDozentSchema = z.object({
+  kennung: z.string().trim().min(1, "Bitte gib eine Dozenten-Kennung oder E-Mail ein."),
+});
+
 export const veranstaltungenRouter = Router();
 
 // Status der Veranstaltung ergibt sich aus ihren Sessions: läuft gerade eine,
@@ -17,6 +21,135 @@ function computeVeranstaltungStatus(sessions: { status: string }[]): "LAUFEND" |
   if (sessions.length === 0 || sessions.some((s) => s.status === "GEPLANT")) return "GEPLANT";
   return "BEENDET";
 }
+
+veranstaltungenRouter.get("/:id/dozenten", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const id = Number(req.params.id);
+
+  const veranstaltung = await prisma.veranstaltung.findFirst({
+    where: {
+      id,
+      OR: [
+        { dozentId: req.session.dozentId },
+        { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+      ],
+    },
+    include: {
+      dozent: true,
+      mitDozenten: {
+        include: {
+          dozent: true,
+        },
+      },
+    },
+  });
+
+  if (!veranstaltung) {
+    return res.status(404).json({ message: "Diese Veranstaltung existiert nicht." });
+  }
+
+  res.json([
+    {
+      id: veranstaltung.dozent.id,
+      vorname: veranstaltung.dozent.vorname,
+      nachname: veranstaltung.dozent.nachname,
+      email: veranstaltung.dozent.email,
+      istErsteller: true,
+    },
+    ...veranstaltung.mitDozenten.map((verknuepfung) => ({
+      id: verknuepfung.dozent.id,
+      vorname: verknuepfung.dozent.vorname,
+      nachname: verknuepfung.dozent.nachname,
+      email: verknuepfung.dozent.email,
+      istErsteller: false,
+    })),
+  ]);
+});
+
+veranstaltungenRouter.post("/:id/dozenten", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const id = Number(req.params.id);
+
+  const parsed = addDozentSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: parsed.error.issues[0].message,
+    });
+  }
+
+  const veranstaltung = await prisma.veranstaltung.findFirst({
+    where: {
+      id,
+      dozentId: req.session.dozentId,
+    },
+  });
+
+  if (!veranstaltung) {
+    return res.status(404).json({
+      message: "Diese Veranstaltung existiert nicht oder du bist nicht der Ersteller.",
+    });
+  }
+
+  const kennung = parsed.data.kennung;
+  const dozentId = Number(kennung);
+
+  const dozent = Number.isInteger(dozentId) && dozentId > 0
+    ? await prisma.dozent.findUnique({
+        where: { id: dozentId },
+      })
+    : await prisma.dozent.findUnique({
+        where: { email: kennung },
+      });
+
+  if (!dozent) {
+    return res.status(404).json({
+      message: "Kein Dozenten-Profil mit dieser Kennung oder E-Mail gefunden.",
+    });
+  }
+
+  if (dozent.id === req.session.dozentId) {
+    return res.status(400).json({
+      message: "Du bist bereits Ersteller:in dieser Veranstaltung.",
+    });
+  }
+
+  const bestehendeVerknuepfung = await prisma.veranstaltungDozent.findUnique({
+    where: {
+      veranstaltungId_dozentId: {
+        veranstaltungId: id,
+        dozentId: dozent.id,
+      },
+    },
+  });
+
+  if (bestehendeVerknuepfung) {
+    return res.status(409).json({
+      message: "Dieses Dozenten-Profil ist bereits verknüpft.",
+    });
+  }
+
+  await prisma.veranstaltungDozent.create({
+    data: {
+      veranstaltungId: id,
+      dozentId: dozent.id,
+    },
+  });
+
+  res.status(201).json({
+    id: dozent.id,
+    vorname: dozent.vorname,
+    nachname: dozent.nachname,
+    email: dozent.email,
+    istErsteller: false,
+  });
+});
 
 veranstaltungenRouter.get("/", async (req, res) => {
   if (!req.session.dozentId) {
