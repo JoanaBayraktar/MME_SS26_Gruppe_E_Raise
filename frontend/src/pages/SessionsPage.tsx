@@ -1,11 +1,29 @@
 import { Calendar, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Card, DashboardLayout, EmptyState, SegmentedControl, Select } from "../components/ui";
-import { DozentDto, getJson, isUnauthorized, SessionSummaryDto } from "../lib/api";
+import { Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  DashboardLayout,
+  EmptyState,
+  SegmentedControl,
+  Select,
+} from "../components/ui";
+import {
+  DozentDto,
+  getJson,
+  isUnauthorized,
+  SessionSummaryDto,
+} from "../lib/api";
 import { DOZENT_NAV_ITEMS } from "../lib/dozentNav";
 import { formatDatum } from "../lib/formatDate";
-import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE, SessionStatus } from "../lib/sessionStatus";
+import {
+  SESSION_STATUS_LABEL,
+  SESSION_STATUS_TONE,
+  SessionStatus,
+} from "../lib/sessionStatus";
 import { buildSessionDetailPath, ROUTES } from "../routes";
 
 type LoadState = "loading" | "loaded" | "error";
@@ -26,14 +44,20 @@ export interface SessionsPageContext {
 
 export default function SessionsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [dozent, setDozent] = useState<DozentDto | null>(null);
   const [sessions, setSessions] = useState<SessionSummaryDto[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
-  const [veranstaltungFilter, setVeranstaltungFilter] = useState(ALLE_VERANSTALTUNGEN);
+  const [veranstaltungFilter, setVeranstaltungFilter] = useState(
+    searchParams.get("veranstaltung") ?? ALLE_VERANSTALTUNGEN,
+  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALLE");
 
   const load = () => {
-    Promise.all([getJson<DozentDto>("/api/auth/me"), getJson<SessionSummaryDto[]>("/api/sessions")])
+    Promise.all([
+      getJson<DozentDto>("/api/auth/me"),
+      getJson<SessionSummaryDto[]>("/api/sessions"),
+    ])
       .then(([dozentData, sessionsData]) => {
         setDozent(dozentData);
         setSessions(sessionsData);
@@ -52,14 +76,17 @@ export default function SessionsPage() {
 
   const veranstaltungen = useMemo(() => {
     const byId = new Map<number, string>();
-    sessions.forEach((session) => byId.set(session.veranstaltungId, session.veranstaltungName));
+    sessions.forEach((session) =>
+      byId.set(session.veranstaltungId, session.veranstaltungName),
+    );
     return Array.from(byId, ([id, name]) => ({ id, name }));
   }, [sessions]);
 
   const filteredSessions = sessions.filter(
     (session) =>
-      (veranstaltungFilter === ALLE_VERANSTALTUNGEN || session.veranstaltungId === Number(veranstaltungFilter)) &&
-      (statusFilter === "ALLE" || session.status === statusFilter)
+      (veranstaltungFilter === ALLE_VERANSTALTUNGEN ||
+        session.veranstaltungId === Number(veranstaltungFilter)) &&
+      (statusFilter === "ALLE" || session.status === statusFilter),
   );
 
   return (
@@ -79,7 +106,9 @@ export default function SessionsPage() {
         </Button>
       }
     >
-      {loadState === "error" && <Alert tone="error">Konnte Sessions nicht laden.</Alert>}
+      {loadState === "error" && (
+        <Alert tone="error">Konnte Sessions nicht laden.</Alert>
+      )}
 
       {loadState === "loaded" && sessions.length === 0 && (
         <Card>
@@ -117,7 +146,11 @@ export default function SessionsPage() {
 
           {filteredSessions.length === 0 ? (
             <Card>
-              <EmptyState icon={Calendar} title="Keine Sessions gefunden" description="Passe die Filter an." />
+              <EmptyState
+                icon={Calendar}
+                title="Keine Sessions gefunden"
+                description="Passe die Filter an."
+              />
             </Card>
           ) : (
             <Card className="overflow-x-auto !p-0">
@@ -135,13 +168,23 @@ export default function SessionsPage() {
                   {filteredSessions.map((session) => (
                     <tr
                       key={session.id}
-                      onClick={() => navigate(buildSessionDetailPath(session.id))}
+                      onClick={() =>
+                        navigate(buildSessionDetailPath(session.id))
+                      }
                       className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
                     >
-                      <td className="px-4 py-3 font-semibold text-gray-900">{session.name}</td>
-                      <td className="px-4 py-3 text-gray-500">{session.veranstaltungName}</td>
-                      <td className="px-4 py-3 text-gray-500">{formatDatum(session.datum)}</td>
-                      <td className="px-4 py-3 text-gray-500">{session.code}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        {session.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {session.veranstaltungName}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {formatDatum(session.datum)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {session.code}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge tone={SESSION_STATUS_TONE[session.status]}>
                           {SESSION_STATUS_LABEL[session.status]}
@@ -156,7 +199,9 @@ export default function SessionsPage() {
         </>
       )}
 
-      <Outlet context={{ reloadSessions: load } satisfies SessionsPageContext} />
+      <Outlet
+        context={{ reloadSessions: load } satisfies SessionsPageContext}
+      />
     </DashboardLayout>
   );
 }
