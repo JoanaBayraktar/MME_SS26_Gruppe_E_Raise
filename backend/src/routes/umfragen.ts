@@ -34,11 +34,32 @@ umfragenRouter.get("/active", async (req, res) => {
     return res.json(null);
   }
 
+  const studentToken =
+    typeof req.query.studentToken === "string"
+      ? req.query.studentToken
+      : undefined;
+
+  let bereitsAbgestimmt = false;
+
+  if (studentToken) {
+    const abstimmung = await prisma.abstimmung.findFirst({
+      where: {
+        studentToken,
+        option: {
+          umfrageId: umfrage.id,
+        },
+      },
+    });
+
+    bereitsAbgestimmt = Boolean(abstimmung);
+  }
+
   res.json({
     id: umfrage.id,
     frageText: umfrage.frageText,
     typ: umfrage.typ,
     status: umfrage.status,
+    bereitsAbgestimmt,
     antwortoptionen: umfrage.antwortoptionen.map((option) => ({
       id: option.id,
       text: option.text,

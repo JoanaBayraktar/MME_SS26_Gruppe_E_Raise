@@ -41,6 +41,7 @@ export interface ActiveUmfrageDto {
   frageText: string;
   typ: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "SKALA";
   status: "AKTIV";
+  bereitsAbgestimmt: boolean;
   antwortoptionen: {
     id: number;
     text: string;
@@ -98,7 +99,10 @@ export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path, { credentials: "include" });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+    throw new ApiError(
+      data?.message ?? "Etwas ist schiefgelaufen.",
+      res.status,
+    );
   }
   return data as T;
 }
@@ -112,7 +116,10 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+    throw new ApiError(
+      data?.message ?? "Etwas ist schiefgelaufen.",
+      res.status,
+    );
   }
   return data as T;
 }
@@ -141,7 +148,10 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+    throw new ApiError(
+      data?.message ?? "Etwas ist schiefgelaufen.",
+      res.status,
+    );
   }
   return data as T;
 }
@@ -150,6 +160,9 @@ export async function deleteRequest(path: string): Promise<void> {
   const res = await fetch(path, { method: "DELETE", credentials: "include" });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
-    throw new ApiError(data?.message ?? "Etwas ist schiefgelaufen.", res.status);
+    throw new ApiError(
+      data?.message ?? "Etwas ist schiefgelaufen.",
+      res.status,
+    );
   }
 }

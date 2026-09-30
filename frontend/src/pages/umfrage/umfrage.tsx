@@ -48,10 +48,13 @@ export default function Umfrage() {
       );
 
       const activeUmfrage = await getJson<ActiveUmfrageDto | null>(
-        `/api/umfragen/active?sessionId=${session.id}`,
+        `/api/umfragen/active?sessionId=${session.id}&studentToken=${encodeURIComponent(
+          getStudentToken(),
+        )}`,
       );
 
       setUmfrage(activeUmfrage);
+      setHasVoted(activeUmfrage?.bereitsAbgestimmt ?? false);
     } catch {
       setUmfrage(null);
     } finally {
@@ -153,7 +156,6 @@ export default function Umfrage() {
   // setzt die auswahl zurück wenn eine neue umfrage aktiv wird
   useEffect(() => {
     setSelectedOptionIds([]);
-    setHasVoted(false);
     setVoteMessage(null);
   }, [umfrage?.id]);
 
