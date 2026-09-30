@@ -48,6 +48,19 @@ export interface ActiveUmfrageDto {
   }[];
 }
 
+export interface UmfrageErgebnisDto {
+  id: number;
+  frageText: string;
+  typ: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "SKALA";
+  totalTeilnehmende: number;
+  antwortoptionen: {
+    id: number;
+    text: string;
+    stimmen: number;
+    prozent: number;
+  }[];
+}
+
 export interface SessionSummaryDto {
   id: number;
   name: string;
