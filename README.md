@@ -41,6 +41,11 @@ Raise unterstützt Lehrveranstaltungen mit einem gemeinsamen Live-Bereich für S
 - Studierende benötigen keinen Account und können einer laufenden Session über einen Session-Code bzw. QR-Code beitreten.
 - Die Ansichten und Funktionen unterscheiden sich abhängig von der jeweiligen Rolle.
 
+#### Konto-Verwaltung
+- Dozent:innen können ihre Profildaten (Vorname, Nachname, E-Mail) jederzeit bearbeiten.
+- Das Passwort kann über einen eigenen Dialog geändert werden, inklusive Live-Prüfung auf Mindestlänge und übereinstimmende Wiederholung.
+- Der Account kann über eine zweistufige Bestätigung unwiderruflich gelöscht werden.
+
 #### Veranstaltungsverwaltung
 - Dozent:innen können Veranstaltungen mit Name und Kürzel erstellen.
 - Alle zugeordneten Veranstaltungen werden im Dashboard übersichtlich dargestellt.
@@ -49,10 +54,10 @@ Raise unterstützt Lehrveranstaltungen mit einem gemeinsamen Live-Bereich für S
 - Verknüpfte Dozent:innen erhalten Zugriff auf die zugehörigen Sessions und Moderationsfunktionen.
 
 #### Session-Management
-- Sessions können für Veranstaltungen geplant und gestartet werden.
+- Sessions können für Veranstaltungen geplant werden, entweder mit automatischem Start/Ende im festgelegten Zeitraum oder mit manuellem Start durch die Dozent:innen.
 - Für laufende Sessions werden ein Session-Code und ein QR-Code zum Beitritt bereitgestellt.
 - Dozent:innen können direkt aus der Session-Verwaltung in die Live-Ansicht wechseln.
-- Laufende Sessions können beendet und anschließend archiviert werden.
+- Manuell gestartete Sessions können mit Bestätigungsdialog beendet werden, laufende Sessions werden anschließend archiviert.
 
 #### Live Q&A
 - Studierende können innerhalb einer Session Fragen stellen.
@@ -149,6 +154,13 @@ Mit einem zweiten Browser bzw. einer weiteren Studierenden-Session kann eine wei
 1. In der Dozent:innen-Ansicht die laufende Session beenden.
 2. Prüfen, ob die Session nicht mehr als aktiv angezeigt wird.
 3. Archivierte bzw. abgeschlossene Inhalte anschließend über die entsprechenden Archivansichten prüfen.
+
+#### 8. Konto-Verwaltung testen
+
+1. In der Dozent:innen-Ansicht auf `Account` wechseln.
+2. Vorname, Nachname oder E-Mail-Adresse ändern und speichern.
+3. Über `Passwort ändern` das aktuelle und ein neues Passwort eingeben; prüfen, ob Mindestlänge und übereinstimmende Wiederholung live angezeigt werden.
+4. Abmelden und mit dem neuen Passwort erneut einloggen.
 
 ## Zuständigkeiten
 - **Joana Bayraktar:** Onboarding & Authentifizierung, Session-Management & Navigation
