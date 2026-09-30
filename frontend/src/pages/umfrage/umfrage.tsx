@@ -34,7 +34,7 @@ export default function Umfrage() {
   const [hasVoted, setHasVoted] = useState(false);
   const [ergebnis, setErgebnis] = useState<UmfrageErgebnisDto | null>(null);
 
-  // lädt die aktuell aktive umfrage für die beigetretene session
+  // lädt die aktuell aktive umfrage für die jeweilige session
   const loadUmfrage = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) {
       setIsRefreshing(true);
@@ -43,23 +43,52 @@ export default function Umfrage() {
     try {
       const storedSession = getStoredSession();
 
-      if (storedSession?.role !== ROLE.STUDENT || !storedSession.sessionCode) {
+      if (!storedSession) {
         setUmfrage(null);
         return;
       }
 
-      const session = await getJson<SessionByCodeDto>(
-        `/api/sessions/by-code/${storedSession.sessionCode}`,
-      );
+      // student:innen laden die session über den beitrittscode
+      if (storedSession.role === ROLE.STUDENT && storedSession.sessionCode) {
+        const session = await getJson<SessionByCodeDto>(
+          `/api/sessions/by-code/${storedSession.sessionCode}`,
+        );
 
-      const activeUmfrage = await getJson<ActiveUmfrageDto | null>(
-        `/api/umfragen/active?sessionId=${session.id}&studentToken=${encodeURIComponent(
-          getStudentToken(),
-        )}`,
-      );
+        const activeUmfrage = await getJson<ActiveUmfrageDto | null>(
+          `/api/umfragen/active?sessionId=${session.id}&studentToken=${encodeURIComponent(
+            getStudentToken(),
+          )}`,
+        );
 
-      setUmfrage(activeUmfrage);
-      setHasVoted(activeUmfrage?.bereitsAbgestimmt ?? false);
+        setUmfrage(activeUmfrage);
+        setHasVoted(activeUmfrage?.bereitsAbgestimmt ?? false);
+        return;
+      }
+
+      // dozent:innen laden die aktuell aktive session
+      if (storedSession.role === ROLE.DOZENT) {
+        const session = await getJson<{
+          id: number;
+        } | null>("/api/sessions/active");
+
+        if (!session) {
+          setUmfrage(null);
+          return;
+        }
+
+        const activeUmfrage = await getJson<ActiveUmfrageDto | null>(
+          `/api/umfragen/active?sessionId=${session.id}`,
+        );
+
+        setUmfrage(activeUmfrage);
+
+        // dozent:innen sehen direkt die live ergebnisse
+        setHasVoted(Boolean(activeUmfrage));
+
+        return;
+      }
+
+      setUmfrage(null);
     } catch {
       setUmfrage(null);
     } finally {
