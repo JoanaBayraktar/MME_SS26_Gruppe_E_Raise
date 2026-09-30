@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Card } from "./Card";
 
 // Muss zur duration-200-Klasse unten passen, damit onClose erst nach dem
@@ -17,15 +17,22 @@ interface ModalProps {
 // SessionsPage), nur dieses Overlay kommt per verschachtelter Route dazu.
 export function Modal({ onClose, className = "", children }: ModalProps) {
   const [visible, setVisible] = useState(false);
+  const closeTimeout = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(frame);
+    // Ausstehendes onClose abbrechen, wenn dieses Modal wegen eines neuen
+    // Aufrufers (z. B. Folge-Dialog) vorzeitig unmountet – sonst überschreibt
+    // das verzögerte onClose später den bereits neuen State des Aufrufers.
+    return () => {
+      cancelAnimationFrame(frame);
+      if (closeTimeout.current) clearTimeout(closeTimeout.current);
+    };
   }, []);
 
   const close = () => {
     setVisible(false);
-    window.setTimeout(onClose, FADE_DURATION_MS);
+    closeTimeout.current = window.setTimeout(onClose, FADE_DURATION_MS);
   };
 
   return (
