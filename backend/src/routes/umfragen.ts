@@ -37,6 +37,7 @@ umfragenRouter.get("/active", async (req, res) => {
   res.json({
     id: umfrage.id,
     frageText: umfrage.frageText,
+    typ: umfrage.typ,
     status: umfrage.status,
     antwortoptionen: umfrage.antwortoptionen.map((option) => ({
       id: option.id,

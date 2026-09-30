@@ -39,6 +39,7 @@ export interface SessionByCodeDto {
 export interface ActiveUmfrageDto {
   id: number;
   frageText: string;
+  typ: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "SKALA";
   status: "AKTIV";
   antwortoptionen: {
     id: number;
