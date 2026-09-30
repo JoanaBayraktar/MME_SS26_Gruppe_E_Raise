@@ -173,7 +173,13 @@ veranstaltungenRouter.get("/", async (req, res) => {
   }
 
   const veranstaltungen = await prisma.veranstaltung.findMany({
-    where: { dozentId: req.session.dozentId },
+    // zeigt eigene und verknüpfte veranstaltungen im dashboard an
+    where: {
+      OR: [
+        { dozentId: req.session.dozentId },
+        { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+      ],
+    },
     orderBy: { erstelltAm: "desc" },
     include: { sessions: { select: { status: true } } },
   });
@@ -198,7 +204,14 @@ veranstaltungenRouter.get("/:id", async (req, res) => {
 
   const id = Number(req.params.id);
   const veranstaltung = await prisma.veranstaltung.findFirst({
-    where: { id, dozentId: req.session.dozentId },
+    // erlaubt auch verknüpften dozent:innen den zugriff auf die veranstaltung
+    where: {
+      id,
+      OR: [
+        { dozentId: req.session.dozentId },
+        { mitDozenten: { some: { dozentId: req.session.dozentId } } },
+      ],
+    },
     include: { sessions: { orderBy: { startZeit: "desc" } } },
   });
 
