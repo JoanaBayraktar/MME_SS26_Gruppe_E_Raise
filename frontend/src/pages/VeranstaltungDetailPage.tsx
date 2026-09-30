@@ -11,6 +11,7 @@ import {
 } from "../components/ui";
 import {
   ApiError,
+  deleteJson,
   getJson,
   postJson,
   VerknuepfterDozentDto,
@@ -73,6 +74,27 @@ export default function VeranstaltungDetailPage() {
     }
   };
 
+  // entfernt eine verknüpfte person wieder aus der veranstaltung
+  const handleRemoveDozent = async (dozentId: number) => {
+    if (!veranstaltungId) return;
+
+    setError(null);
+
+    try {
+      await deleteJson(
+        `/api/veranstaltungen/${veranstaltungId}/dozenten/${dozentId}`,
+      );
+
+      await loadDozenten();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Dozenten-Profil konnte nicht entfernt werden.",
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-8">
       <div className="mx-auto w-full max-w-3xl">
@@ -82,9 +104,7 @@ export default function VeranstaltungDetailPage() {
         />
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dozenten-Profile
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Dozenten-Profile</h1>
           <p className="mt-2 text-gray-600">
             Verwalte, wer diese Veranstaltung mitmoderieren kann.
           </p>
@@ -97,10 +117,7 @@ export default function VeranstaltungDetailPage() {
             </div>
           )}
 
-          <Field
-            label="Dozenten-Kennung oder E-Mail"
-            htmlFor="dozent-kennung"
-          >
+          <Field label="Dozenten-Kennung oder E-Mail" htmlFor="dozent-kennung">
             <div className="flex gap-3">
               <Input
                 id="dozent-kennung"
@@ -139,14 +156,23 @@ export default function VeranstaltungDetailPage() {
                     {dozent.vorname} {dozent.nachname}
                   </p>
                   <p className="text-sm text-gray-500">{dozent.email}</p>
-                  <p className="text-xs text-gray-400">
-                    Kennung {dozent.id}
-                  </p>
+                  <p className="text-xs text-gray-400">Kennung {dozent.id}</p>
                 </div>
 
-                {dozent.istErsteller && (
-                  <Badge tone="brand">Ersteller:in</Badge>
-                )}
+                <div className="flex items-center gap-3">
+                  {dozent.istErsteller ? (
+                    <Badge tone="brand">Ersteller:in</Badge>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-auto px-3"
+                      onClick={() => handleRemoveDozent(dozent.id)}
+                    >
+                      Entfernen
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
