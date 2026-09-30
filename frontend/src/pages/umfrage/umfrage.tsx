@@ -250,43 +250,84 @@ export default function Umfrage() {
         {umfrage.frageText}
       </h2>
 
-      <div className="mt-5 space-y-3">
-        {umfrage.antwortoptionen.map((option) => {
-          const isSelected = selectedOptionIds.includes(option.id);
+      {hasVoted && ergebnis ? (
+        <div className="mt-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-900">
+              Live-Ergebnisse
+            </p>
 
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => handleOptionClick(option.id)}
-              disabled={hasVoted}
-              className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
-                isSelected
-                  ? "border-pink-500 bg-pink-50 text-pink-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-              } disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {option.text}
-            </button>
-          );
-        })}
-      </div>
+            <p className="text-xs text-gray-500">
+              {ergebnis.totalTeilnehmende} Teilnehmende
+            </p>
+          </div>
 
-      <button
-        type="button"
-        onClick={() => void handleVote()}
-        disabled={selectedOptionIds.length === 0 || isSubmitting || hasVoted}
-        className="mt-5 w-full rounded-xl bg-pink-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        {isSubmitting
-          ? "Wird abgestimmt..."
-          : hasVoted
-            ? "Bereits abgestimmt"
-            : "Abstimmen"}
-      </button>
+          <div className="space-y-4">
+            {ergebnis.antwortoptionen.map((option) => (
+              <div key={option.id}>
+                <div className="mb-1 flex items-center justify-between gap-4">
+                  <span className="text-sm text-gray-700">{option.text}</span>
 
-      {voteMessage && (
-        <p className="mt-4 text-center text-sm text-gray-600">{voteMessage}</p>
+                  <span className="shrink-0 text-sm font-medium text-gray-900">
+                    {option.prozent}% ({option.stimmen})
+                  </span>
+                </div>
+
+                <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-pink-500 transition-all duration-500"
+                    style={{ width: `${Math.min(option.prozent, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-5 space-y-3">
+            {umfrage.antwortoptionen.map((option) => {
+              const isSelected = selectedOptionIds.includes(option.id);
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleOptionClick(option.id)}
+                  disabled={hasVoted}
+                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
+                    isSelected
+                      ? "border-pink-500 bg-pink-50 text-pink-700"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {option.text}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleVote()}
+            disabled={
+              selectedOptionIds.length === 0 || isSubmitting || hasVoted
+            }
+            className="mt-5 w-full rounded-xl bg-pink-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {isSubmitting
+              ? "Wird abgestimmt..."
+              : hasVoted
+                ? "Bereits abgestimmt"
+                : "Abstimmen"}
+          </button>
+
+          {voteMessage && (
+            <p className="mt-4 text-center text-sm text-gray-600">
+              {voteMessage}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
