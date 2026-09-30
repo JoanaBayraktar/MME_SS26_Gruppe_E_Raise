@@ -32,8 +32,8 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
+        <Route path=":sessionId" element={<SessionDetailPage />} />
       </Route>
-      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route
         path={ROUTES.DOZENT_ARCHIV}

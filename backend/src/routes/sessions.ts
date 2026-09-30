@@ -106,36 +106,6 @@ sessionsRouter.get("/", async (req, res) => {
   );
 });
 
-sessionsRouter.get("/:id", async (req, res) => {
-  if (!req.session.dozentId) {
-    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
-  }
-
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    return res.status(404).json({ message: "Diese Session existiert nicht." });
-  }
-
-  const session = await prisma.session.findFirst({
-    where: { id, veranstaltung: { dozentId: req.session.dozentId } },
-    include: { veranstaltung: true },
-  });
-  if (!session) {
-    return res.status(404).json({ message: "Diese Session existiert nicht." });
-  }
-
-  res.json({
-    id: session.id,
-    name: session.name,
-    code: session.code,
-    status: computeSessionStatus(session),
-    datum: session.datum,
-    startZeit: session.startZeit,
-    endZeit: session.endZeit,
-    veranstaltungName: session.veranstaltung.name,
-  });
-});
-
 sessionsRouter.get("/active", async (req, res) => {
   if (!req.session.dozentId) {
     return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
@@ -212,5 +182,37 @@ sessionsRouter.post("/", async (req, res) => {
     name: session.name,
     code: session.code,
     status: computeSessionStatus(session),
+  });
+});
+
+// Muss nach allen anderen GET-Routen stehen, sonst schnappt sich der
+// dynamische Parameter feste Pfade wie "/active" oder "/code" (id="active").
+sessionsRouter.get("/:id", async (req, res) => {
+  if (!req.session.dozentId) {
+    return res.status(401).json({ message: "Bitte melde dich als Dozent:in an." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(404).json({ message: "Diese Session existiert nicht." });
+  }
+
+  const session = await prisma.session.findFirst({
+    where: { id, veranstaltung: { dozentId: req.session.dozentId } },
+    include: { veranstaltung: true },
+  });
+  if (!session) {
+    return res.status(404).json({ message: "Diese Session existiert nicht." });
+  }
+
+  res.json({
+    id: session.id,
+    name: session.name,
+    code: session.code,
+    status: computeSessionStatus(session),
+    datum: session.datum,
+    startZeit: session.startZeit,
+    endZeit: session.endZeit,
+    veranstaltungName: session.veranstaltung.name,
   });
 });
