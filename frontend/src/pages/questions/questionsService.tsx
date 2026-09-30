@@ -1,5 +1,6 @@
 const BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:4000/api";
 const API_URL = `${BASE_URL}/questions`;
+const SESSIONS_API_URL = `${BASE_URL}/sessions`;
 const PROFILE_API_URL = `${BASE_URL}/profile`;
 
 // Safe helper for localStorage (Prevents SSR crashes)
@@ -51,6 +52,13 @@ export interface QuestionPayload {
   topic?: string;
   sessionId?: string | number;
   status?: "neu" | "gefragt" | "beantwortet";
+}
+
+export interface SessionStatsDto {
+  sessionName: string;
+  totalQuestions: number;
+  totalPolls: number;
+  participantCount: number;
 }
 
 // Alle Fragen für eine bestimmte Session abrufen (gibt im Fall der Fälle immer ein Array zurück)
@@ -122,6 +130,50 @@ export async function updateQuestionStatus(questionId: number, status: "neu" | "
     };
   }
   return updated;
+}
+
+// ==========================================
+// SESSION-STATISTIKEN & AKTIONEN (NEU)
+// ==========================================
+
+// Aggregierte Statistiken (Fragen, Umfragen, Teilnehmende) für eine Session laden
+export async function fetchSessionStats(sessionId?: string | number): Promise<SessionStatsDto> {
+  const activeSession = sessionId || getCurrentSessionId();
+  try {
+    const data = await apiRequest<SessionStatsDto>(`${SESSIONS_API_URL}/${activeSession}/stats`);
+    return data || { sessionName: "Session", totalQuestions: 0, totalPolls: 0, participantCount: 0 };
+  } catch (error) {
+    console.error("Fehler beim Laden der Session-Statistiken:", error);
+    return { sessionName: "Session", totalQuestions: 0, totalPolls: 0, participantCount: 0 };
+  }
+}
+
+// Export der Session-Ergebnisse triggern (CSV/JSON)
+export async function exportSessionData(sessionId?: string | number): Promise<string | null> {
+  const activeSession = sessionId || getCurrentSessionId();
+  try {
+    const response = await apiRequest<{ downloadUrl?: string }>(`${SESSIONS_API_URL}/${activeSession}/export`, {
+      method: "POST",
+    });
+    return response?.downloadUrl || null;
+  } catch (error) {
+    console.error("Fehler beim Exportieren der Session:", error);
+    return null;
+  }
+}
+
+// Session im Backend als beendet markieren / schließen
+export async function closeSession(sessionId?: string | number): Promise<boolean> {
+  const activeSession = sessionId || getCurrentSessionId();
+  try {
+    await apiRequest(`${SESSIONS_API_URL}/${activeSession}/close`, {
+      method: "POST",
+    });
+    return true;
+  } catch (error) {
+    console.error("Fehler beim Schließen der Session:", error);
+    return false;
+  }
 }
 
 // ==========================================

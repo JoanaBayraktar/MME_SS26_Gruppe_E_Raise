@@ -6,7 +6,7 @@ import { ActiveSessionDto, getJson, SessionByCodeDto } from "../lib/api";
 import { ROLE } from "../lib/role";
 import { getStoredSession } from "../lib/session";
 import { ROUTES } from "../routes";
-import QuestionsEdit from "./questions/questions_edit"; // Adjust this relative path if needed (e.g., "./questions_edit" or "../components/questions_edit")
+import QuestionsEdit from "./questions/questions_edit";
 
 const TABS = [
   { id: "questions", label: "Fragenfeed", path: "questions" },
@@ -17,6 +17,7 @@ const TABS = [
 const SYNC_INTERVAL_MS = 8000;
 
 interface ExtendedActiveSession extends ActiveSessionDto {
+  id?: number | string;
   startTime?: string;
   endTime?: string;
   participantCount?: number;
@@ -52,7 +53,9 @@ export default function NavigationPage({
   const [headerData, setHeaderData] = useState<ExtendedActiveSession | null>(null);
   const [showQrCode, setShowQrCode] = useState(false);
   
-  // State for Questions Edit view inside the left pane
+  // State for the simplified confirmation modal
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+
   const [isQuestionsEditOpen, setIsQuestionsEditOpen] = useState(false);
   const [questionsState, setQuestionsState] = useState<Question[]>([]);
   
@@ -61,12 +64,8 @@ export default function NavigationPage({
 
   const isQuestionsView = location.pathname.endsWith("questions");
 
-  // Listen to the custom event triggered from the header button
   useEffect(() => {
-    const handleOpenEdit = () => {
-      setIsQuestionsEditOpen(true);
-    };
-
+    const handleOpenEdit = () => setIsQuestionsEditOpen(true);
     window.addEventListener("open-questions-edit", handleOpenEdit);
     return () => {
       window.removeEventListener("open-questions-edit", handleOpenEdit);
@@ -120,6 +119,18 @@ export default function NavigationPage({
   }, []);
 
   const visibleTabs = TABS.filter((tab) => !(isDozent && tab.id === "archiv"));
+
+  // Handler when clicking confirm inside the modal (mit Übergabe der echten Session-ID)
+  const handleConfirmEndSession = () => {
+    setShowEndSessionModal(false);
+    const activeId = headerData?.id;
+
+    if (activeId) {
+      navigate(`/dozent/sessions/${activeId}/ended`);
+    } else {
+      navigate("/session-ended");
+    }
+  };
 
   return (
     <div className="relative flex h-[100dvh] w-full overflow-hidden bg-white isolate">
@@ -245,13 +256,14 @@ export default function NavigationPage({
               </div>
             </div>
 
+            {/* Session Beenden Button in Accent Color */}
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("open-end-session-modal"))}
-              className="w-full flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white py-2.5 text-sm font-semibold text-pink-600 shadow-sm transition-colors hover:bg-pink-50 cursor-pointer"
+              onClick={() => setShowEndSessionModal(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-pink-600 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 cursor-pointer"
             >
-              <span className="h-3.5 w-3.5 rounded border border-pink-600 inline-flex items-center justify-center">
-                <span className="h-1.5 w-1.5 bg-pink-600 rounded-2xs" />
+              <span className="h-3.5 w-3.5 rounded border border-white inline-flex items-center justify-center">
+                <span className="h-1.5 w-1.5 bg-white rounded-2xs" />
               </span>
               Session beenden
             </button>
@@ -259,6 +271,7 @@ export default function NavigationPage({
         </aside>
       )}
 
+      {/* QR Code Zoom Modal */}
       {showQrCode && headerData && (
         <Modal className="max-w-xs p-6 text-center" onClose={() => setShowQrCode(false)}>
           {(close) => (
@@ -277,6 +290,37 @@ export default function NavigationPage({
                 Schließen
               </button>
             </>
+          )}
+        </Modal>
+      )}
+
+      {/* Simplified Confirm Modal */}
+      {showEndSessionModal && (
+        <Modal className="max-w-md p-6 text-center" onClose={() => setShowEndSessionModal(false)}>
+          {() => (
+            <div className="p-2">
+              <h2 className="text-2xl font-bold text-gray-900">Session beenden?</h2>
+              <p className="mt-2 text-sm text-gray-500">
+                Die Session wird geschlossen und ins Archiv verschoben. Studis können danach keine Fragen mehr stellen.
+              </p>
+
+              <div className="flex items-center gap-3 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEndSessionModal(false)}
+                  className="flex-1 rounded-full border border-gray-300 bg-white py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmEndSession}
+                  className="flex-1 rounded-full bg-pink-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 cursor-pointer transition-colors"
+                >
+                  Session beenden
+                </button>
+              </div>
+            </div>
           )}
         </Modal>
       )}

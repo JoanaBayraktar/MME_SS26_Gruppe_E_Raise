@@ -15,6 +15,7 @@ import NewSessionPage from "./pages/NewSessionPage";
 import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AccountPage from "./pages/AccountPage";
+import SessionEndPage from "./pages/sessionEndPage"; // <-- Newly added page import
 import { ROUTES } from "./routes";
 import NavigationPage from "./pages/NavigationPage";
 import Archiv from "./pages/archiv/Archiv";
@@ -72,6 +73,10 @@ export function AnimatedRoutes() {
         <Route path="umfrage" element={<Umfrage />} />
         <Route path="archiv" element={<Archiv />} />
       </Route>
+
+      {/* Session-Ended Summary Page Route */}
+      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/ended`} element={<SessionEndPage />} />
+      <Route path={ROUTES.SESSION_ENDED} element={<SessionEndPage />} />
 
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
       <Route
