@@ -6,6 +6,9 @@ import { Server } from "socket.io";
 import { prisma } from "./prisma";
 import questionsRouter from "./questions";
 import commentsRouter from "./comments";
+import { authRouter } from "./routes/auth";
+import { sessionsRouter } from "./routes/sessions";
+import { veranstaltungenRouter } from "./routes/veranstaltungen";
 
 // Environment Configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -32,6 +35,10 @@ app.use(
     cookie: { httpOnly: true, sameSite: "lax" },
   })
 );
+
+app.use("/api/auth", authRouter);
+app.use("/api/sessions", sessionsRouter);
+app.use("/api/veranstaltungen", veranstaltungenRouter);
 
 // --- API ROUTES ---
 app.use("/api/questions", questionsRouter);
