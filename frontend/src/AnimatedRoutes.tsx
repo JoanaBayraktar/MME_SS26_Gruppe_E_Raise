@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams, Outlet } from "react-router-dom";
 import StyleGuide from "./StyleGuide";
 import OnboardingPage from "./pages/OnboardingPage";
 import JoinPage from "./pages/JoinPage";
@@ -16,6 +16,8 @@ import NewVeranstaltungPage from "./pages/NewVeranstaltungPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AccountPage from "./pages/AccountPage";
 import { ROUTES } from "./routes";
+import { useViewTransitionLocation } from "./lib/useViewTransitionLocation";
+import VeranstaltungDetailPage from "./pages/VeranstaltungDetailPage";
 import NavigationPage from "./pages/NavigationPage";
 import Archiv from "./pages/archiv/Archiv";
 import Questions from "./pages/questions/questions";
@@ -44,7 +46,13 @@ function DozentLiveLayout() {
       sessionTitle={session ? `${session.name} · ${formatUhrzeit(session.startZeit)}` : "Lade Session..."}
       courseCode={session ? `#${session.code}` : "..."}
       onBack={() => navigate(sessionId ? `${ROUTES.DOZENT_SESSIONS}/${sessionId}` : ROUTES.DOZENT_SESSIONS)}
-    />
+    >
+      {/* 
+        NOTE: Make sure your NavigationPage component accepts and renders 
+        an <Outlet /> or children prop so the nested routes show up properly!
+      */}
+      <Outlet />
+    </NavigationPage>
   );
 }
 
@@ -59,13 +67,14 @@ export function AnimatedRoutes() {
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
       <Route path={ROUTES.DOZENT_DASHBOARD} element={<DozentDashboardPage />} />
+      
+      {/* Sessions and Nested Sub-routes */}
       <Route path={ROUTES.DOZENT_SESSIONS} element={<SessionsPage />}>
         <Route path="neu" element={<NewSessionPage />} />
         <Route path=":sessionId" element={<SessionDetailPage />} />
       </Route>
-      <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId`} element={<SessionDetailPage />} />
-      
-      {/* Dozenten Live-Ansicht mit dynamischem Wrapper */}
+
+      {/* Dozenten Live-Ansicht mit dynamischem Wrapper & Nested Children */}
       <Route path={`${ROUTES.DOZENT_SESSIONS}/:sessionId/live`} element={<DozentLiveLayout />}>
         <Route index element={<Navigate to="questions" replace />} />
         <Route path="questions" element={<Questions />} />
@@ -73,13 +82,25 @@ export function AnimatedRoutes() {
         <Route path="archiv" element={<Archiv />} />
       </Route>
 
+      {/* Veranstaltungen */}
       <Route path={ROUTES.DOZENT_VERANSTALTUNG_NEW} element={<NewVeranstaltungPage />} />
+      <Route path={`${ROUTES.DOZENT_VERANSTALTUNGEN}/:veranstaltungId`} element={<VeranstaltungDetailPage />} />
+      
+      {/* Misc Pages */}
       <Route
         path={ROUTES.DOZENT_ARCHIV}
-        element={<PlaceholderPage title="Archiv" issueNumber={27} backTo={ROUTES.DOZENT_DASHBOARD} />}
+        element={
+          <PlaceholderPage
+            title="Archiv"
+            issueNumber={27}
+            backTo={ROUTES.DOZENT_DASHBOARD}
+          />
+        }
       />
       <Route path={ROUTES.DOZENT_ACCOUNT} element={<AccountPage />} />
       <Route path={ROUTES.DESIGN_SYSTEM} element={<StyleGuide />} />
+      
+      {/* Fallback Navigation Route */}
       <Route path={ROUTES.NAVIGATION} element={<NavigationPage />}>
         <Route path="questions" element={<Questions />} />
         <Route path="umfrage" element={<Umfrage />} />

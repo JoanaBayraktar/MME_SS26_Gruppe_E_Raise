@@ -12,6 +12,7 @@ export const ROUTES = {
   DOZENT_ACCOUNT: "/dozent/account",
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
+  DOZENT_VERANSTALTUNGEN: "/dozent/veranstaltungen",
   DESIGN_SYSTEM: "/design-system",
   NAVIGATION: "/navigation",
   ARCHIV: "/navigation/archiv",
@@ -51,6 +52,13 @@ export function buildSessionLivePath(sessionId: number | string): string {
 // Prüft, ob eine Route eine Live-Ansicht einer Session ist ("/dozent/sessions/123/live...")
 function isSessionLiveRoute(pathname: string): boolean {
   return pathname.startsWith(`${ROUTES.DOZENT_SESSIONS}/`) && pathname.includes("/live");
+} // <- Fixed: Added missing closing brace here
+
+// baut den link zur jeweiligen veranstaltung zusammen
+export function buildVeranstaltungDetailPath(
+  veranstaltungId: number,
+): string {
+  return `${ROUTES.DOZENT_VERANSTALTUNGEN}/${veranstaltungId}`;
 }
 
 // Detailseite einer einzelnen Session ("/dozent/sessions/123") – dynamisch,
