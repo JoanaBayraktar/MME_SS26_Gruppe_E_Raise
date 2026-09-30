@@ -12,6 +12,7 @@ export const ROUTES = {
   DOZENT_ACCOUNT: "/dozent/account",
   DOZENT_SESSION_NEW: "/dozent/sessions/neu",
   DOZENT_VERANSTALTUNG_NEW: "/dozent/veranstaltungen/neu",
+  DOZENT_VERANSTALTUNGEN: "/dozent/veranstaltungen",
   DESIGN_SYSTEM: "/design-system",
   NAVIGATION: "/navigation",
   ARCHIV: "/navigation/archiv",
@@ -41,6 +42,13 @@ export const ROUTE_DEPTH: Record<string, number> = {
 
 export function buildSessionDetailPath(sessionId: number): string {
   return `${ROUTES.DOZENT_SESSIONS}/${sessionId}`;
+}
+
+// baut den link zur jeweiligen veranstaltung zusammen
+export function buildVeranstaltungDetailPath(
+  veranstaltungId: number,
+): string {
+  return `${ROUTES.DOZENT_VERANSTALTUNGEN}/${veranstaltungId}`;
 }
 
 // Detailseite einer einzelnen Session ("/dozent/sessions/123") – dynamisch,
